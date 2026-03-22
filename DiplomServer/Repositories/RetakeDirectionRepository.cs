@@ -15,34 +15,6 @@ namespace DiplomServer.Repositories
             _context = context;
         }
 
-        public async Task<List<RetakeDirection>> GetMyDraftsAsync(uint teacherId)
-        {
-            return await _context.RetakeDirections
-                .Include(rd => rd.GroupDiscipline)
-                    .ThenInclude(gd => gd.Discipline)
-                .Include(rd => rd.GroupDiscipline.Teacher)
-                .Include(rd => rd.GroupDiscipline.Group)
-                .Include(rd => rd.GroupDiscipline.AttestType)
-                .Include(rd => rd.RetakeDirectionStudents)
-                    .ThenInclude(rds => rds.Student)
-                .Where(rd => rd.CreatedById == teacherId && rd.Status == "draft")
-                .OrderByDescending(rd => rd.CreatedAt)
-                .ToListAsync();
-        }
-
-        public async Task<RetakeDirection?> GetByIdWithIncludesAsync(uint id)
-        {
-            return await _context.RetakeDirections
-                .Include(rd => rd.GroupDiscipline)
-                    .ThenInclude(gd => gd.Discipline)
-                .Include(rd => rd.GroupDiscipline.Teacher)
-                .Include(rd => rd.GroupDiscipline.Group)
-                .Include(rd => rd.GroupDiscipline.AttestType)
-                .Include(rd => rd.RetakeDirectionStudents)
-                    .ThenInclude(rds => rds.Student)
-                .FirstOrDefaultAsync(rd => rd.Id == id);
-        }
-
         public async Task<uint> CreateAsync(RetakeDirection direction)
         {
             _context.RetakeDirections.Add(direction);
@@ -73,6 +45,35 @@ namespace DiplomServer.Repositories
                 .Where(s => s.GroupId == groupId && s.IsActive)
                 .ToListAsync();
         }
+        public async Task<List<RetakeDirection>> GetMyDraftsAsync(uint teacherId)
+        {
+            return await _context.RetakeDirections
+                .Include(rd => rd.GroupDiscipline)
+                    .ThenInclude(gd => gd.Discipline)
+                .Include(rd => rd.GroupDiscipline.Teacher)
+                .Include(rd => rd.GroupDiscipline.Group)
+                .Include(rd => rd.GroupDiscipline.AttestType)
+                .Include(rd => rd.RetakeDirectionStudents)
+                    .ThenInclude(rds => rds.Student)
+                .Where(rd => rd.CreatedById == teacherId && rd.Status == "draft")
+                .OrderByDescending(rd => rd.CreatedAt)
+                .ToListAsync();
+        }
+
+        public async Task<RetakeDirection?> GetByIdWithIncludesAsync(uint id)
+        {
+            return await _context.RetakeDirections
+                .Include(rd => rd.GroupDiscipline)
+                    .ThenInclude(gd => gd.Discipline)
+                .Include(rd => rd.GroupDiscipline.Teacher)
+                .Include(rd => rd.GroupDiscipline.Group)
+                .Include(rd => rd.GroupDiscipline.AttestType)
+                .Include(rd => rd.RetakeDirectionStudents)
+                    .ThenInclude(rds => rds.Student)
+                .FirstOrDefaultAsync(rd => rd.Id == id);
+        }
+
+        
 
         public async Task<GroupDiscipline?> GetGroupDisciplineAsync(uint disciplineId, uint groupId, uint attestTypeId, int semester, string studyYear)
         {

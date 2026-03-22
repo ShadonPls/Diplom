@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]  // JWT required
 public class RetakeDirectionsController : ControllerBase
 {
     private readonly IRetakeDirectionService _service;
@@ -24,7 +23,7 @@ public class RetakeDirectionsController : ControllerBase
     {
         uint teacherId = GetCurrentTeacherId();
         var drafts = await _service.GetMyDraftsAsync(teacherId);
-        return Ok(drafts);
+        return Ok(drafts);  
     }
 
     /// <summary>
