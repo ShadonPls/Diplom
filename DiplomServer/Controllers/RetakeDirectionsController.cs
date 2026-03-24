@@ -21,7 +21,7 @@ public class RetakeDirectionsController : ControllerBase
     [HttpGet("my")]
     public async Task<ActionResult<List<RetakeDirectionResponseDto>>> GetMyDrafts()
     {
-        uint teacherId = GetCurrentTeacherId();
+        uint teacherId = 1;
         var drafts = await _service.GetMyDraftsAsync(teacherId);
         return Ok(drafts);  
     }
@@ -33,7 +33,7 @@ public class RetakeDirectionsController : ControllerBase
     public async Task<ActionResult<RetakeDirectionResponseDto>> CreateQuick(
         [FromBody] CreateRetakeDirectionRequestDto dto)
     {
-        uint teacherId = GetCurrentTeacherId();
+        uint teacherId = 1;
         var direction = await _service.CreateQuickAsync(dto, teacherId);
         return CreatedAtAction(nameof(GetMyDrafts), direction);
     }
@@ -45,7 +45,7 @@ public class RetakeDirectionsController : ControllerBase
     public async Task<ActionResult<RetakeDirectionResponseDto>> CreateForm(
         [FromBody] CreateRetakeDirectionFormDto dto)
     {
-        uint teacherId = GetCurrentTeacherId();
+        uint teacherId = 1;
         var direction = await _service.CreateFormAsync(dto, teacherId);
         return CreatedAtAction(nameof(GetMyDrafts), direction);
     }
@@ -72,10 +72,5 @@ public class RetakeDirectionsController : ControllerBase
     {
         var students = await _service.GetGroupStudentsAsync(groupId);
         return Ok(students);
-    }
-
-    private uint GetCurrentTeacherId()
-    {
-        return uint.Parse(User.FindFirst("teacherId")!.Value);
     }
 }

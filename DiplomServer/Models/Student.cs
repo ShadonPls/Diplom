@@ -7,7 +7,7 @@
         public string LastName { get; set; } = null!;
         public string? Surname { get; set; }
         public uint GroupId { get; set; }
-        public bool IsActive { get; set; }
+        public int IsActive { get; set; }
 
         public Group Group { get; set; } = null!;
         public ICollection<Grade> Grades { get; set; } = new List<Grade>();

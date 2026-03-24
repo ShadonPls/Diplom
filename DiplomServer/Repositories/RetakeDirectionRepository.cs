@@ -35,14 +35,14 @@ namespace DiplomServer.Repositories
         public async Task<List<Group>> GetGroupsAsync()
         {
             return await _context.Groups
-                .Where(g => g.Students.Any(s => s.IsActive))
+                .Where(g => g.Students.Any(s => s.IsActive == 1))
                 .ToListAsync();
         }
 
         public async Task<List<Student>> GetGroupStudentsAsync(uint groupId)
         {
             return await _context.Students
-                .Where(s => s.GroupId == groupId && s.IsActive)
+                .Where(s => s.GroupId == groupId && s.IsActive == 1)
                 .ToListAsync();
         }
         public async Task<List<RetakeDirection>> GetMyDraftsAsync(uint teacherId)
