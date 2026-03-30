@@ -1,76 +1,53 @@
-﻿using DiplomServer.Interfaces.Service;
-using DiplomServer.Models.DTO.RetakeDirection;
-using DiplomServer.Models.DTO.Select;
+﻿using DiplomServer.Application.DTOs.RetakeDirections;
+using DiplomServer.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-[ApiController]
-[Route("api/[controller]")]
-public class RetakeDirectionsController : ControllerBase
+namespace DiplomServer.Controllers
 {
-    private readonly IRetakeDirectionService _service;
-
-    public RetakeDirectionsController(IRetakeDirectionService service)
+    [ApiController]
+    [Route("api/retake-directions")]
+    [Authorize]
+    public class RetakeDirectionsController : ControllerBase
     {
-        _service = service;
-    }
+        private readonly IRetakeDirectionService _service;
 
-    /// <summary>
-    /// Мои черновики направлений
-    /// </summary>
-    [HttpGet("my")]
-    public async Task<ActionResult<List<RetakeDirectionResponseDto>>> GetMyDrafts()
-    {
-        uint teacherId = 1;
-        var drafts = await _service.GetMyDraftsAsync(teacherId);
-        return Ok(drafts);  
-    }
+        public RetakeDirectionsController(IRetakeDirectionService service)
+        {
+            _service = service;
+        }
 
-    /// <summary>
-    /// Быстрое создание
-    /// </summary>
-    [HttpPost("quick")]
-    public async Task<ActionResult<RetakeDirectionResponseDto>> CreateQuick(
-        [FromBody] CreateRetakeDirectionRequestDto dto)
-    {
-        uint teacherId = 1;
-        var direction = await _service.CreateQuickAsync(dto, teacherId);
-        return CreatedAtAction(nameof(GetMyDrafts), direction);
-    }
+        [HttpGet("drafts")]
+        public async Task<ActionResult<List<RetakeDirectionResponseDto>>> GetMyDrafts()
+        {
+            return Ok(await _service.GetMyDraftsAsync());
+        }
 
-    /// <summary>
-    /// Полная форма
-    /// </summary>
-    [HttpPost("form")]
-    public async Task<ActionResult<RetakeDirectionResponseDto>> CreateForm(
-        [FromBody] CreateRetakeDirectionFormDto dto)
-    {
-        uint teacherId = 1;
-        var direction = await _service.CreateFormAsync(dto, teacherId);
-        return CreatedAtAction(nameof(GetMyDrafts), direction);
-    }
+        [HttpGet("{id}")]
+        public async Task<ActionResult<RetakeDirectionResponseDto>> GetById(uint id)
+        {
+            return Ok(await _service.GetByIdAsync(id));
+        }
 
-    [HttpGet("{id}/pdf")]
-    public async Task<IActionResult> DownloadPdf(uint id)
-    {
-        //Заглушка на нерабочий контроллер
-        return Ok();
-    }
+        [HttpPost]
+        public async Task<ActionResult<RetakeDirectionResponseDto>> Create([FromBody] CreateRetakeDirectionRequestDto dto)
+        {
+            var result = await _service.CreateAsync(dto);
+            return Ok(result);
+        }
 
-    [HttpGet("groups")]
-    public async Task<ActionResult<List<SelectListItemDto>>> GetGroups()
-    {
-        var groups = await _service.GetGroupsAsync();
-        return Ok(groups);
-    }
+        [HttpPut("{id}")]
+        public async Task<ActionResult<RetakeDirectionResponseDto>> Update(uint id, [FromBody] UpdateRetakeDirectionRequestDto dto)
+        {
+            var result = await _service.UpdateDraftAsync(id, dto);
+            return Ok(result);
+        }
 
-    /// <summary>
-    /// Dropdown студенты группы
-    /// </summary>
-    [HttpGet("groups/{groupId}/students")]
-    public async Task<ActionResult<List<SelectListItemDto>>> GetGroupStudents(uint groupId)
-    {
-        var students = await _service.GetGroupStudentsAsync(groupId);
-        return Ok(students);
+        [HttpPost("{id}/publish")]
+        public async Task<IActionResult> Publish(uint id)
+        {
+            await _service.PublishAsync(id);
+            return NoContent();
+        }
     }
 }

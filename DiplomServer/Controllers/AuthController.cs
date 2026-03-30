@@ -1,11 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using DiplomServer.Interfaces.Service;
-using DiplomServer.Models.DTO.Auth;
+﻿using DiplomServer.Application.DTOs.Auth;
+using DiplomServer.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace DiplomServer.Controllers
 {
     [ApiController]
-    [Route("api/auth/")]
+    [Route("api/auth")]
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
@@ -16,36 +17,27 @@ namespace DiplomServer.Controllers
         }
 
         [HttpPost("login")]
-        public async Task<ActionResult> Login([FromBody] LoginDto dto)
+        [AllowAnonymous]
+        public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginRequestDto dto)
         {
-            try
-            {
-                var token = await _authService.LoginAsync(dto.Email, dto.Password);
-                return Ok(new { token });
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Unauthorized(new { message = "Неверный email или пароль" });
-            }
+            var result = await _authService.LoginAsync(dto);
+            return Ok(result);
         }
 
         [HttpPost("register")]
-        public async Task<ActionResult> Register([FromBody] RegisterDto dto)
+        [AllowAnonymous]
+        public async Task<ActionResult<AuthResponseDto>> Register([FromBody] RegisterRequestDto dto)
         {
-            try
-            {
-                var token = await _authService.RegisterAsync(dto);
-                return Ok(new { token, message = "Пользователь зарегистрирован!" });
-            }
-            catch (InvalidOperationException ex) when (ex.Message.Contains("уже зарегистрирован"))
-            {
-                return Conflict(new { message = "Email уже зарегистрирован" });
-            }
-            catch (Exception)
-            {
-                return StatusCode(500, new { message = "Ошибка сервера" });
-            }
+            var result = await _authService.RegisterAsync(dto);
+            return Ok(result);
+        }
+
+        [HttpGet("me")]
+        [Authorize]
+        public async Task<ActionResult<CurrentUserDto>> Me()
+        {
+            var result = await _authService.GetCurrentUserAsync();
+            return Ok(result);
         }
     }
-
 }
