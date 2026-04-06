@@ -1,4 +1,5 @@
 ﻿using DiplomServer.Application.DTOs.Auth;
+using DiplomServer.Application.DTOs.Common;
 using DiplomServer.Domain.Entities;
 using DiplomServer.Infrastructure.Data;
 
@@ -10,4 +11,5 @@ public interface IAuthRepository
     Task<ScheduleUser?> GetByIdAsync(uint id);
     Task<bool> ValidatePasswordAsync(ScheduleUser user, string password);
     Task<bool> LoginExistsAsync(string login);
+    Task<TypeDto> GetTeacherByIdAsync(uint teacherId);
 }

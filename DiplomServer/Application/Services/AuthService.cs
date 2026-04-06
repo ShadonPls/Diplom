@@ -33,7 +33,7 @@ namespace DiplomServer.Application.Services
             if (user is null || !await _authRepository.ValidatePasswordAsync(user, dto.Password))
                 throw new UnauthorizedAccessException("Неверный логин или пароль.");
 
-            return BuildAuthResponse(user);
+            return await BuildAuthResponse(user);
         }
 
 
@@ -45,17 +45,21 @@ namespace DiplomServer.Application.Services
             var user = await _authRepository.GetByIdAsync(_currentUserService.UserId);
             if (user is null)
                 throw new UnauthorizedAccessException("Пользователь не найден.");
-
+            var teacher = await _authRepository.GetTeacherByIdAsync(user.IdUser);
+            var teacherName = teacher?.Name ?? "Преподаватель не найден";
             return new CurrentUserDto
             {
                 Id = (uint)user.Id,
                 Login = user.Login,
-                TeacherId = user.IdUser
+                TeacherId = user.IdUser,
+                TeacherName = teacherName,
             };
         }
 
-        private AuthResponseDto BuildAuthResponse(ScheduleUser user)
+        private async Task<AuthResponseDto> BuildAuthResponse(ScheduleUser user)
         {
+            var teacher = await _authRepository.GetTeacherByIdAsync(user.IdUser);
+            var teacherName = teacher?.Name ?? "Преподаватель не найден";
             return new AuthResponseDto
             {
                 Token = _jwtTokenGenerator.Generate(user),
@@ -63,7 +67,8 @@ namespace DiplomServer.Application.Services
                 {
                     Id = (uint)user.Id,
                     Login = user.Login,
-                    TeacherId = user.IdUser
+                    TeacherId = user.IdUser,
+                    TeacherName = teacherName,
                 }
             };
         }

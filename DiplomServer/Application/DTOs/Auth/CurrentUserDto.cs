@@ -5,5 +5,6 @@
         public uint Id { get; set; }
         public string Login { get; set; } = string.Empty;
         public uint? TeacherId { get; set; }
+        public string TeacherName { get; set; } = "";
     }
 }
