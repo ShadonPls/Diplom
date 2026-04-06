@@ -7,7 +7,7 @@ namespace DiplomServer.Application.Validators
     {
         public LoginDtoValidator()
         {
-            RuleFor(x => x.Email)
+            RuleFor(x => x.Login)
                 .NotEmpty().WithMessage("Email обязателен.")
                 .EmailAddress().WithMessage("Некорректный формат email.")
                 .MaximumLength(255).WithMessage("Email не должен превышать 255 символов.");

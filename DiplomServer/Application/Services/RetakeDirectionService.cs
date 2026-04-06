@@ -10,24 +10,60 @@ namespace DiplomServer.Application.Services
     public class RetakeDirectionService : IRetakeDirectionService
     {
         private readonly IRetakeDirectionRepository _repository;
+        private readonly ILookupService _lookupService;
         private readonly ICurrentUserService _currentUserService;
 
         public RetakeDirectionService(
-            IRetakeDirectionRepository repository,
-            ICurrentUserService currentUserService)
+        IRetakeDirectionRepository repository,
+        ILookupService lookupService,
+        ICurrentUserService currentUserService)
         {
             _repository = repository;
+            _lookupService = lookupService;
             _currentUserService = currentUserService;
         }
 
-        public async Task<List<RetakeDirectionResponseDto>> GetMyDraftsAsync()
+        public async Task<List<RetakeDirectionDetailsDto>> GetMyDraftsAsync()
         {
             var userId = GetUserId();
             var items = await _repository.GetMyDraftsAsync(userId);
-            return items.Select(MapToResponse).ToList();
+
+            var results = new List<RetakeDirectionDetailsDto>();
+
+            foreach (var item in items)
+            {
+                var group = await _lookupService.GetGroupByIdAsync(item.GroupDiscipline.GroupId);
+                var discipline = await _lookupService.GetDisciplineByIdAsync(item.GroupDiscipline.DisciplineId);
+                var attestation = await _lookupService.GetAttestationByIdAsync(item.GroupDiscipline.AttestTypeId);
+
+                var studentIds = item.RetakeDirectionStudents.Select(s => s.StudentId);
+                var studentVrDict = await _lookupService.GetStudentsDictionaryByIdAsync(studentIds);
+
+                var students = item.RetakeDirectionStudents.Select(s => new RetakeDirectionStudentResponseDto
+                {
+                    StudentId = s.StudentId,
+                    StudentName = studentVrDict[s.StudentId].Name,
+                    GradeValue = s.RetakeGradeValue,
+                    IsPassed = s.RetakeIsPassed,
+                    GradeDate = s.RetakeGradeDate
+                }).ToList();
+
+                var direction = MapToResponse(item);
+
+                results.Add(new RetakeDirectionDetailsDto
+                {
+                    Direction = direction,
+                    Group = group,
+                    Discipline = discipline,
+                    AttestationType = attestation,
+                    Students = students
+                });
+            }
+
+            return results;
         }
 
-        public async Task<RetakeDirectionResponseDto> GetByIdAsync(uint id)
+        public async Task<RetakeDirectionDetailsDto> GetByIdAsync(uint id)
         {
             var userId = GetUserId();
             var entity = await _repository.GetByIdWithIncludesAsync(id);
@@ -35,13 +71,36 @@ namespace DiplomServer.Application.Services
             if (entity is null || entity.CreatedById != userId)
                 throw new KeyNotFoundException("Направление не найдено.");
 
-            return MapToResponse(entity);
+            var direction = MapToResponse(entity);
+
+            var group = await _lookupService.GetGroupByIdAsync(entity.GroupDiscipline.GroupId);
+            var discipline = await _lookupService.GetDisciplineByIdAsync(entity.GroupDiscipline.DisciplineId);
+            var attestation = await _lookupService.GetAttestationByIdAsync(entity.GroupDiscipline.AttestTypeId);
+            var studentIds = entity.RetakeDirectionStudents.Select(s => s.StudentId);
+            var studentVrDict = await _lookupService.GetStudentsDictionaryByIdAsync(studentIds);
+
+            var students = entity.RetakeDirectionStudents.Select(s => new RetakeDirectionStudentResponseDto
+            {
+                StudentId = s.StudentId,
+                StudentName = studentVrDict[s.StudentId].Name,
+                GradeValue = s.RetakeGradeValue,
+                IsPassed = s.RetakeIsPassed,
+                GradeDate = s.RetakeGradeDate
+            }).ToList();
+
+            return new RetakeDirectionDetailsDto
+            {
+                Direction = direction,
+                Group = group,
+                Discipline = discipline,
+                AttestationType = attestation,
+                Students = students
+            };
         }
 
-        public async Task<RetakeDirectionResponseDto> CreateAsync(CreateRetakeDirectionRequestDto dto)
+        public async Task<RetakeDirectionDetailsDto> CreateAsync(CreateRetakeDirectionRequestDto dto)
         {
             var userId = GetUserId();
-            var teacherId = GetTeacherId();
 
             if (dto.Students == null || dto.Students.Count == 0)
                 throw new ArgumentException("Необходимо добавить хотя бы одного студента.");
@@ -49,7 +108,6 @@ namespace DiplomServer.Application.Services
             var groupDisciplineId = await _repository.GetOrCreateGroupDisciplineIdAsync(
                 dto.GroupId,
                 dto.DisciplineId,
-                teacherId,
                 dto.AttestTypeId,
                 dto.Semester,
                 dto.StudyYear);
@@ -80,15 +138,38 @@ namespace DiplomServer.Application.Services
             await _repository.AddStudentsAsync(students);
 
             var saved = await _repository.GetByIdWithIncludesAsync(directionId)
-                        ?? throw new KeyNotFoundException("Созданное направление не найдено.");
+                ?? throw new KeyNotFoundException("Созданное направление не найдено.");
 
-            return MapToResponse(saved);
+            var group = await _lookupService.GetGroupByIdAsync(saved.GroupDiscipline.GroupId);
+            var discipline = await _lookupService.GetDisciplineByIdAsync(saved.GroupDiscipline.DisciplineId);
+            var attestation = await _lookupService.GetAttestationByIdAsync(saved.GroupDiscipline.AttestTypeId);
+
+            var studentIds = saved.RetakeDirectionStudents.Select(s => s.StudentId);
+            var studentVrDict = await _lookupService.GetStudentsDictionaryByIdAsync(studentIds);
+
+            var studentsDetails = saved.RetakeDirectionStudents.Select(s => new RetakeDirectionStudentResponseDto
+            {
+                StudentId = s.StudentId,
+                StudentName = studentVrDict[s.StudentId].Name,
+                GradeValue = s.RetakeGradeValue,
+                IsPassed = s.RetakeIsPassed,
+                GradeDate = s.RetakeGradeDate
+            }).ToList();
+
+            var directionDto = MapToResponse(saved);
+
+            return new RetakeDirectionDetailsDto
+            {
+                Direction = directionDto,
+                Group = group,
+                Discipline = discipline,
+                AttestationType = attestation,
+                Students = studentsDetails
+            };
         }
-
-        public async Task<RetakeDirectionResponseDto> UpdateDraftAsync(uint id, UpdateRetakeDirectionRequestDto dto)
+        public async Task<RetakeDirectionDetailsDto> UpdateDraftAsync(uint id, UpdateRetakeDirectionRequestDto dto)
         {
             var userId = GetUserId();
-            var teacherId = GetTeacherId();
 
             var direction = await _repository.GetByIdWithIncludesAsync(id);
             if (direction is null || direction.CreatedById != userId)
@@ -100,7 +181,6 @@ namespace DiplomServer.Application.Services
             var groupDisciplineId = await _repository.GetOrCreateGroupDisciplineIdAsync(
                 dto.GroupId,
                 dto.DisciplineId,
-                teacherId,
                 dto.AttestTypeId,
                 dto.Semester,
                 dto.StudyYear);
@@ -127,9 +207,34 @@ namespace DiplomServer.Application.Services
             await _repository.AddStudentsAsync(students);
 
             var saved = await _repository.GetByIdWithIncludesAsync(id)
-                        ?? throw new KeyNotFoundException("Обновлённое направление не найдено.");
+                ?? throw new KeyNotFoundException("Обновлённое направление не найдено.");
 
-            return MapToResponse(saved);
+            var group = await _lookupService.GetGroupByIdAsync(saved.GroupDiscipline.GroupId);
+            var discipline = await _lookupService.GetDisciplineByIdAsync(saved.GroupDiscipline.DisciplineId);
+            var attestation = await _lookupService.GetAttestationByIdAsync(saved.GroupDiscipline.AttestTypeId);
+
+            var studentIds = saved.RetakeDirectionStudents.Select(s => s.StudentId);
+            var studentVrDict = await _lookupService.GetStudentsDictionaryByIdAsync(studentIds);
+
+            var studentsDetails = saved.RetakeDirectionStudents.Select(s => new RetakeDirectionStudentResponseDto
+            {
+                StudentId = s.StudentId,
+                StudentName = studentVrDict[s.StudentId].Name,
+                GradeValue = s.RetakeGradeValue,
+                IsPassed = s.RetakeIsPassed,
+                GradeDate = s.RetakeGradeDate
+            }).ToList();
+
+            var directionDto = MapToResponse(saved);
+
+            return new RetakeDirectionDetailsDto
+            {
+                Direction = directionDto,
+                Group = group,
+                Discipline = discipline,
+                AttestationType = attestation,
+                Students = studentsDetails
+            };
         }
 
         public async Task PublishAsync(uint id)
@@ -147,47 +252,9 @@ namespace DiplomServer.Application.Services
             await _repository.UpdateAsync(direction);
         }
 
-        public async Task<List<SelectListItemDto>> GetGroupsAsync()
-        {
-            var groups = await _repository.GetGroupsAsync();
-            return groups.Select(g => new SelectListItemDto
-            {
-                Value = g.Id,
-                Text = g.Name
-            }).ToList();
-        }
-
-        public async Task<List<SelectListItemDto>> GetGroupStudentsAsync(uint groupId)
-        {
-            var students = await _repository.GetGroupStudentsAsync(groupId);
-            return students.Select(s => new SelectListItemDto
-            {
-                Value = s.Id,
-                Text = $"{s.LastName} {s.FirstName}".Trim()
-            }).ToList();
-        }
-
-        public async Task<List<SelectListItemDto>> GetTeacherDisciplinesAsync()
-        {
-            var teacherId = GetTeacherId();
-            var disciplines = await _repository.GetTeacherDisciplinesAsync(teacherId);
-            return disciplines.Select(d => new SelectListItemDto
-            {
-                Value = d.Id,
-                Text = d.Name
-            }).ToList();
-        }
-
         private uint GetUserId()
         {
             return _currentUserService.UserId;
-        }
-
-        private uint GetTeacherId()
-        {
-            if (!_currentUserService.TeacherId.HasValue)
-                throw new UnauthorizedAccessException("TeacherId отсутствует.");
-            return _currentUserService.TeacherId.Value;
         }
 
         private static RetakeDirectionResponseDto MapToResponse(RetakeDirection entity)
@@ -200,21 +267,10 @@ namespace DiplomServer.Application.Services
                 CreatedAt = entity.CreatedAt,
                 RetakeDate = entity.RetakeDate,
                 GroupId = entity.GroupDiscipline.GroupId,
-                GroupName = entity.GroupDiscipline.Group.Name,
                 DisciplineId = entity.GroupDiscipline.DisciplineId,
-                DisciplineName = entity.GroupDiscipline.Discipline.Name,
                 AttestTypeId = entity.GroupDiscipline.AttestTypeId,
-                AttestTypeName = entity.GroupDiscipline.AttestType.Name,
                 Semester = entity.GroupDiscipline.Semester,
-                StudyYear = entity.GroupDiscipline.StudyYear,
-                Students = entity.RetakeDirectionStudents.Select(s => new RetakeDirectionStudentResponseDto
-                {
-                    StudentId = s.StudentId,
-                    StudentName = $"{s.Student.LastName} {s.Student.FirstName}".Trim(),
-                    GradeValue = s.RetakeGradeValue,
-                    IsPassed = s.RetakeIsPassed,
-                    GradeDate = s.RetakeGradeDate
-                }).ToList()
+                StudyYear = entity.GroupDiscipline.StudyYear
             };
         }
     }

@@ -12,6 +12,5 @@
         public DateTime RetakeGradeDate { get; set; }
 
         public RetakeDirection RetakeDirection { get; set; } = null!;
-        public Student Student { get; set; } = null!;
     }
 }

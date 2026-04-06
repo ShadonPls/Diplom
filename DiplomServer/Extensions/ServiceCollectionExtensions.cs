@@ -27,13 +27,42 @@ namespace DiplomServer.Extensions
 
         public static IServiceCollection AddAppDb(this IServiceCollection services, IConfiguration configuration)
         {
+            // == AppDbContext (Diplom) ==
             var connectionString = configuration.GetConnectionString("DefaultConnection")
-                                   ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+                ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
             services.AddDbContext<AppDbContext>(options =>
                 options.UseMySql(
                     connectionString,
                     ServerVersion.AutoDetect(connectionString),
+                    mySqlOptions => mySqlOptions.EnableRetryOnFailure(
+                        maxRetryCount: 5,
+                        maxRetryDelay: TimeSpan.FromSeconds(30),
+                        errorNumbersToAdd: null
+                    )));
+
+            // == ScheduleDbContext (schedule) ==
+            var scheduleConnection = configuration.GetConnectionString("ScheduleConnection")
+                ?? throw new InvalidOperationException("Connection string 'ScheduleConnection' not found.");
+
+            services.AddDbContext<ScheduleDbContext>(options =>
+                options.UseMySql(
+                    scheduleConnection,
+                    ServerVersion.AutoDetect(scheduleConnection),
+                    mySqlOptions => mySqlOptions.EnableRetryOnFailure(
+                        maxRetryCount: 5,
+                        maxRetryDelay: TimeSpan.FromSeconds(30),
+                        errorNumbersToAdd: null
+                    )));
+
+            // == VrDbContext (vr) ==
+            var vrConnection = configuration.GetConnectionString("VrConnection")
+                ?? throw new InvalidOperationException("Connection string 'VrConnection' not found.");
+
+            services.AddDbContext<VrDbContext>(options =>
+                options.UseMySql(
+                    vrConnection,
+                    ServerVersion.AutoDetect(vrConnection),
                     mySqlOptions => mySqlOptions.EnableRetryOnFailure(
                         maxRetryCount: 5,
                         maxRetryDelay: TimeSpan.FromSeconds(30),

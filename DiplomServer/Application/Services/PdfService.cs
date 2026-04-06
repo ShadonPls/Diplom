@@ -34,8 +34,8 @@ namespace DiplomServer.Application.Services
 
             if (direction.CreatedById != teacherId)
                 throw new UnauthorizedAccessException("Нет доступа к данному направлению.");
-
-            return _pdfGenerator.GenerateRetakeDirectionPdf(direction);
+            throw new UnauthorizedAccessException("asfd");
+            //return _pdfGenerator.GenerateRetakeDirectionPdf(direction);
         }
     }
 }

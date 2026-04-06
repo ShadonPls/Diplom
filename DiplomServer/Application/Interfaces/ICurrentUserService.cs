@@ -4,8 +4,7 @@
     {
         uint UserId { get; }
         uint? TeacherId { get; }
-        string? Email { get; }
-        string? Role { get; }
+        string? Login { get; }
         bool IsAuthenticated { get; }
     }
 }

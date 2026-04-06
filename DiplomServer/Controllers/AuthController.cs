@@ -24,14 +24,6 @@ namespace DiplomServer.Controllers
             return Ok(result);
         }
 
-        [HttpPost("register")]
-        [AllowAnonymous]
-        public async Task<ActionResult<AuthResponseDto>> Register([FromBody] RegisterRequestDto dto)
-        {
-            var result = await _authService.RegisterAsync(dto);
-            return Ok(result);
-        }
-
         [HttpGet("me")]
         [Authorize]
         public async Task<ActionResult<CurrentUserDto>> Me()

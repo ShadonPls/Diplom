@@ -28,5 +28,32 @@ namespace DiplomServer.Controllers
         {
             return Ok(await _lookupService.GetAttestTypesAsync());
         }
+        [HttpGet("teachers")]
+        public async Task<ActionResult<List<SelectListItemDto>>> GetTeachers()
+        {
+            return Ok(await _lookupService.GetTeachersAsync());
+        }
+        [HttpGet("disciplines/{disciplineId}/groups")]
+        public async Task<ActionResult<List<SelectListItemDto>>> GetDisciplineGroups(uint disciplineId)
+        {
+            return Ok(await _lookupService.GetGroupsByDisciplineIdAsync(disciplineId));
+        }
+
+        [HttpGet("groups/{groupId}/semestr")]
+        public async Task<ActionResult<List<SelectListItemDto>>> GetSemestrGroups(uint groupId)
+        {
+            return Ok(await _lookupService.GetSemestrByGroupAsync(groupId));
+        }
+        [HttpGet("groups")]
+        public async Task<ActionResult<List<SelectListItemDto>>> GetGroups()
+        {
+            return Ok(await _lookupService.GetGroupsAsync());
+        }
+
+        [HttpGet("groups/{groupId}/students")]
+        public async Task<ActionResult<List<SelectListItemDto>>> GetStudents(uint groupId)
+        {
+            return Ok(await _lookupService.GetGroupStudentsAsync(groupId));
+        }
     }
 }

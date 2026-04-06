@@ -3,6 +3,7 @@ using DiplomServer.Application.Interfaces;
 using DiplomServer.Domain.Entities;
 using DiplomServer.Domain.Enums;
 using DiplomServer.Infrastructure.Auth;
+using DiplomServer.Infrastructure.Data;
 using DiplomServer.Infrastructure.Repositories.Interfaces;
 
 namespace DiplomServer.Application.Services
@@ -25,38 +26,16 @@ namespace DiplomServer.Application.Services
 
         public async Task<AuthResponseDto> LoginAsync(LoginRequestDto dto)
         {
-            if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
-                throw new ArgumentException("Email и пароль обязательны.");
+            if (string.IsNullOrWhiteSpace(dto.Login) || string.IsNullOrWhiteSpace(dto.Password))
+                throw new ArgumentException("Логин и пароль обязательны.");
 
-            var user = await _authRepository.GetByEmailAsync(dto.Email.Trim().ToLower());
+            var user = await _authRepository.GetByLoginAsync(dto.Login.Trim().ToLower());
             if (user is null || !await _authRepository.ValidatePasswordAsync(user, dto.Password))
-                throw new UnauthorizedAccessException("Неверный email или пароль.");
+                throw new UnauthorizedAccessException("Неверный логин или пароль.");
 
             return BuildAuthResponse(user);
         }
 
-        public async Task<AuthResponseDto> RegisterAsync(RegisterRequestDto dto)
-        {
-            if (string.IsNullOrWhiteSpace(dto.Email))
-                throw new ArgumentException("Email обязателен.");
-
-            if (string.IsNullOrWhiteSpace(dto.Password) || dto.Password.Length < 6)
-                throw new ArgumentException("Пароль должен содержать минимум 6 символов.");
-
-            var normalizedEmail = dto.Email.Trim().ToLower();
-
-            if (await _authRepository.EmailExistsAsync(normalizedEmail))
-                throw new InvalidOperationException("Email уже зарегистрирован.");
-
-            var user = await _authRepository.CreateAsync(new RegisterRequestDto
-            {
-                Email = normalizedEmail,
-                Password = dto.Password,
-                Role = string.IsNullOrWhiteSpace(dto.Role) ? UserRoles.Teacher : dto.Role.Trim()
-            });
-
-            return BuildAuthResponse(user);
-        }
 
         public async Task<CurrentUserDto> GetCurrentUserAsync()
         {
@@ -69,24 +48,22 @@ namespace DiplomServer.Application.Services
 
             return new CurrentUserDto
             {
-                Id = user.Id,
-                Email = user.Email,
-                Role = user.Role,
-                TeacherId = user.TeacherId
+                Id = (uint)user.Id,
+                Login = user.Login,
+                TeacherId = user.IdUser
             };
         }
 
-        private AuthResponseDto BuildAuthResponse(User user)
+        private AuthResponseDto BuildAuthResponse(ScheduleUser user)
         {
             return new AuthResponseDto
             {
                 Token = _jwtTokenGenerator.Generate(user),
                 User = new CurrentUserDto
                 {
-                    Id = user.Id,
-                    Email = user.Email,
-                    Role = user.Role,
-                    TeacherId = user.TeacherId
+                    Id = (uint)user.Id,
+                    Login = user.Login,
+                    TeacherId = user.IdUser
                 }
             };
         }

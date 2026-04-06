@@ -22,7 +22,7 @@ namespace DiplomServer.Application.Services
         {
             get
             {
-                var value = User?.FindFirst("TeacherId")?.Value;
+                var value = User?.FindFirst("IdUser")?.Value;
                 if (uint.TryParse(value, out var result))
                     return result;
 
@@ -30,9 +30,7 @@ namespace DiplomServer.Application.Services
             }
         }
 
-        public string? Email => User?.FindFirst(ClaimTypes.Email)?.Value;
-
-        public string? Role => User?.FindFirst(ClaimTypes.Role)?.Value;
+        public string? Login => User?.FindFirst(ClaimTypes.Email)?.Value;
 
         private uint ParseUInt(string claimType)
         {

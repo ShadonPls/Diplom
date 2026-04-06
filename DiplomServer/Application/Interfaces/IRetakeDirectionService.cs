@@ -4,10 +4,10 @@ namespace DiplomServer.Application.Interfaces
 {
     public interface IRetakeDirectionService
     {
-        Task<List<RetakeDirectionResponseDto>> GetMyDraftsAsync();
-        Task<RetakeDirectionResponseDto> GetByIdAsync(uint id);
-        Task<RetakeDirectionResponseDto> CreateAsync(CreateRetakeDirectionRequestDto dto);
-        Task<RetakeDirectionResponseDto> UpdateDraftAsync(uint id, UpdateRetakeDirectionRequestDto dto);
+        Task<List<RetakeDirectionDetailsDto>> GetMyDraftsAsync();
+        Task<RetakeDirectionDetailsDto> GetByIdAsync(uint id);
+        Task<RetakeDirectionDetailsDto> CreateAsync(CreateRetakeDirectionRequestDto dto);
+        Task<RetakeDirectionDetailsDto> UpdateDraftAsync(uint id, UpdateRetakeDirectionRequestDto dto);
         Task PublishAsync(uint id);
     }
 }

@@ -1,13 +1,13 @@
 ﻿using DiplomServer.Application.DTOs.Auth;
 using DiplomServer.Domain.Entities;
+using DiplomServer.Infrastructure.Data;
 
 namespace DiplomServer.Infrastructure.Repositories.Interfaces;
 
 public interface IAuthRepository
 {
-    Task<User?> GetByEmailAsync(string email);
-    Task<User?> GetByIdAsync(uint id);
-    Task<bool> ValidatePasswordAsync(User user, string password);
-    Task<User> CreateAsync(RegisterRequestDto dto);
-    Task<bool> EmailExistsAsync(string email);
+    Task<ScheduleUser?> GetByLoginAsync(string login);
+    Task<ScheduleUser?> GetByIdAsync(uint id);
+    Task<bool> ValidatePasswordAsync(ScheduleUser user, string password);
+    Task<bool> LoginExistsAsync(string login);
 }

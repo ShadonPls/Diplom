@@ -13,7 +13,6 @@
         public DateTime RetakeDate { get; set; }
 
         public GroupDiscipline GroupDiscipline { get; set; } = null!;
-        public User CreatedBy { get; set; } = null!;
 
         public ICollection<RetakeDirectionStudent> RetakeDirectionStudents { get; set; } = new List<RetakeDirectionStudent>();
     }

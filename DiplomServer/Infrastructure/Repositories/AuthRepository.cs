@@ -8,56 +8,31 @@ namespace DiplomServer.Infrastructure.Repositories;
 
 public class AuthRepository : IAuthRepository
 {
-    private readonly AppDbContext _context;
+    private readonly ScheduleDbContext _context;
 
-    public AuthRepository(AppDbContext context)
+    public AuthRepository(ScheduleDbContext context)
     {
         _context = context;
     }
 
-    public async Task<User?> GetByEmailAsync(string email)
+    public async Task<ScheduleUser?> GetByLoginAsync(string login)
     {
-        return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        return await _context.Users.FirstOrDefaultAsync(u => u.Login == login);
     }
 
-    public async Task<User?> GetByIdAsync(uint id)
+    public async Task<ScheduleUser?> GetByIdAsync(uint id)
     {
         return await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
     }
 
-    public async Task<bool> ValidatePasswordAsync(User user, string password)
+    public async Task<bool> ValidatePasswordAsync(ScheduleUser user, string password)
     {
-        return await Task.FromResult(BCrypt.Net.BCrypt.Verify(password, user.PasswordHash));
+        return await Task.FromResult(BCrypt.Net.BCrypt.Verify(password, user.Password));
     }
 
-    public async Task<User> CreateAsync(RegisterRequestDto dto)
+
+    public async Task<bool> LoginExistsAsync(string login)
     {
-        var teacher = new Teacher
-        {
-            FirstName = dto.Email.Split('@')[0],
-            LastName = "Преподаватель",
-            Surname = string.Empty
-        };
-
-        _context.Teachers.Add(teacher);
-        await _context.SaveChangesAsync();
-
-        var user = new User
-        {
-            Email = dto.Email,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-            Role = dto.Role,
-            TeacherId = teacher.Id
-        };
-
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
-
-        return user;
-    }
-
-    public async Task<bool> EmailExistsAsync(string email)
-    {
-        return await _context.Users.AnyAsync(u => u.Email == email);
+        return await _context.Users.AnyAsync(u => u.Login == login);
     }
 }
