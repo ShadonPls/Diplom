@@ -252,6 +252,20 @@ namespace DiplomServer.Application.Services
             await _repository.UpdateAsync(direction);
         }
 
+        public async Task DeleteAsync(uint id)
+        {
+            var userId = GetUserId();
+
+            var direction = await _repository.GetByIdWithIncludesAsync(id);
+            if (direction is null || direction.CreatedById != userId)
+                throw new KeyNotFoundException("Направление не найдено.");
+
+            if (direction.Status != RetakeDirectionStatus.Draft)
+                throw new InvalidOperationException("Удалять можно только черновики.");
+
+            await _repository.DeleteAsync(id);
+        }
+
         private uint GetUserId()
         {
             return _currentUserService.UserId;

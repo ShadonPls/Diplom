@@ -8,6 +8,7 @@ namespace DiplomServer.Infrastructure.Repositories.Interfaces
         Task<RetakeDirection?> GetByIdWithIncludesAsync(uint id);
         Task<uint> CreateAsync(RetakeDirection direction);
         Task UpdateAsync(RetakeDirection direction);
+        Task DeleteAsync(uint id);
         Task<uint> GetOrCreateGroupDisciplineIdAsync(
             uint groupId,
             uint disciplineId,

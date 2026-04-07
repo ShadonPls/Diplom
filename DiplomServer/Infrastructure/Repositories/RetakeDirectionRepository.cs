@@ -80,6 +80,15 @@ namespace DiplomServer.Infrastructure.Repositories
 
             return entity.Id;
         }
+        public async Task DeleteAsync(uint id)
+        {
+            var entity = await _context.RetakeDirections.FindAsync(id);
+            if (entity is not null)
+            {
+                _context.RetakeDirections.Remove(entity);
+                await _context.SaveChangesAsync();
+            }
+        }
 
         public async Task RemoveStudentsAsync(uint directionId)
         {

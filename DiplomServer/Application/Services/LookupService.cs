@@ -63,24 +63,24 @@ namespace DiplomServer.Application.Services
                 Name = g.Name
             }).ToList();
         }
-        public async Task<List<TypeDto>> GetSemestrByGroupAsync(uint groupId)
+        public async Task<List<SelectListItemDto>> GetSemestrByGroupAsync(uint groupId)
         {
             var groups = await _lookupRepository.GetSemestersByGroupIdAsync(groupId);
 
-            return groups.Select(g => new TypeDto
+            return groups.Select(g => new SelectListItemDto
             {
-                Id = g.SemesterNumber,
-                Name = g.StudyYear
+                Value = (uint)g.SemesterNumber,
+                Text = g.StudyYear
             }).ToList();
         }
 
-        public async Task<List<TypeDto>> GetGroupStudentsAsync(uint groupId)
+        public async Task<List<SelectListItemDto>> GetGroupStudentsAsync(uint groupId)
         {
             var students = await _lookupRepository.GetGroupStudentsAsync(groupId);
-            return students.Select(s => new TypeDto
+            return students.Select(s => new SelectListItemDto
             {
-                Id = s.Id,
-                Name = s.Name
+                Value = (uint)s.Id,
+                Text = s.Name
             }).ToList();
         }
 
@@ -94,13 +94,14 @@ namespace DiplomServer.Application.Services
                 Name = group.Name
             };
         }
-        public async Task<List<TypeDto>> GetGroupsByDisciplineIdAsync(uint disciplineId)
+
+        public async Task<List<SelectListItemDto>> GetGroupsByDisciplineIdAsync(uint disciplineId)
         {
             var groups = await _lookupRepository.GetGroupsByDisciplineIdAsync(disciplineId);
-            return groups.Select(g => new TypeDto
+            return groups.Select(g => new SelectListItemDto
             {
-                Id = g.Id,
-                Name = g.Name
+                Value = (uint)g.Id,
+                Text = g.Name
             }).ToList();
         }
         

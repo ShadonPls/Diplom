@@ -49,5 +49,12 @@ namespace DiplomServer.Controllers
             await _service.PublishAsync(id);
             return NoContent();
         }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(uint id)
+        {
+            await _service.DeleteAsync(id);
+            return NoContent();
+        }
     }
 }

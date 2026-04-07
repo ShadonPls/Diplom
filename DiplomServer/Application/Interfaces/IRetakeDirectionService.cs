@@ -9,5 +9,6 @@ namespace DiplomServer.Application.Interfaces
         Task<RetakeDirectionDetailsDto> CreateAsync(CreateRetakeDirectionRequestDto dto);
         Task<RetakeDirectionDetailsDto> UpdateDraftAsync(uint id, UpdateRetakeDirectionRequestDto dto);
         Task PublishAsync(uint id);
+        Task DeleteAsync(uint id);
     }
 }

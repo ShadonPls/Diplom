@@ -1,23 +1,27 @@
 ﻿using DiplomServer.Application.Interfaces;
+using DiplomServer.Domain.Entities;
 using DiplomServer.Infrastructure.Documents;
+using DiplomServer.Infrastructure.Repositories;
 using DiplomServer.Infrastructure.Repositories.Interfaces;
 
 namespace DiplomServer.Application.Services
 {
     public class PdfService : IPdfService
     {
-        private readonly IRetakeDirectionRepository _retakeDirectionRepository;
+        private readonly IRetakeDirectionService _retakeDirectionService;
         private readonly ICurrentUserService _currentUserService;
         private readonly PdfGenerator _pdfGenerator;
-
+        private readonly IAuthService _authService;
         public PdfService(
-            IRetakeDirectionRepository retakeDirectionRepository,
+            IRetakeDirectionService retakeDirectionService,
             ICurrentUserService currentUserService,
-            PdfGenerator pdfGenerator)
+            PdfGenerator pdfGenerator,
+            IAuthService authService)
         {
-            _retakeDirectionRepository = retakeDirectionRepository;
+            _retakeDirectionService = retakeDirectionService;
             _currentUserService = currentUserService;
             _pdfGenerator = pdfGenerator;
+            _authService = authService;
         }
 
         public async Task<byte[]> GenerateRetakeDirectionPdfAsync(uint retakeDirectionId)
@@ -27,15 +31,9 @@ namespace DiplomServer.Application.Services
 
             var teacherId = _currentUserService.TeacherId.Value;
 
-            var direction = await _retakeDirectionRepository.GetByIdWithIncludesAsync(retakeDirectionId);
-
-            if (direction is null)
-                throw new KeyNotFoundException("Направление не найдено.");
-
-            if (direction.CreatedById != teacherId)
-                throw new UnauthorizedAccessException("Нет доступа к данному направлению.");
-            throw new UnauthorizedAccessException("asfd");
-            //return _pdfGenerator.GenerateRetakeDirectionPdf(direction);
+            var direction = await _retakeDirectionService.GetByIdAsync(retakeDirectionId);
+            var teacher = await _authService.GetCurrentUserAsync();
+            return _pdfGenerator.GenerateRetakeDirectionPdf(direction, teacher);
         }
     }
 }

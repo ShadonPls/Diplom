@@ -1,4 +1,6 @@
-﻿using DiplomServer.Domain.Entities;
+﻿using DiplomServer.Application.DTOs.Auth;
+using DiplomServer.Application.DTOs.RetakeDirections;
+using DiplomServer.Domain.Entities;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -7,103 +9,238 @@ namespace DiplomServer.Infrastructure.Documents
 {
     public class PdfGenerator
     {
-        //public byte[] GenerateRetakeDirectionPdf(RetakeDirection direction)
-        //{
-        //    QuestPDF.Settings.License = LicenseType.Community;
+        public byte[] GenerateRetakeDirectionPdf(RetakeDirectionDetailsDto direction, CurrentUserDto teacher)
+        {
+            QuestPDF.Settings.License = LicenseType.Community;
 
-        //    var document = Document.Create(container =>
-        //    {
-        //        container.Page(page =>
-        //        {
-        //            page.Size(PageSizes.A4);
-        //            page.Margin(30);
-        //            page.DefaultTextStyle(x => x.FontSize(12));
+            var document = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+                    page.Margin(20);
+                    page.DefaultTextStyle(x => x.FontSize(11).FontFamily("Arial"));
 
-        //            page.Header()
-        //                .Column(column =>
-        //                {
-        //                    column.Item().Text("Направление на пересдачу")
-        //                        .FontSize(18)
-        //                        .Bold()
-        //                        .AlignCenter();
+                    // ЗАГОЛОВОК
+                    page.Header()
+                        .Column(column =>
+                        {
+                            column.Spacing(3);
 
-        //                    column.Item().PaddingTop(10).Text($"Номер: {direction.Number ?? "-"}");
-        //                    column.Item().Text($"Дата пересдачи: {direction.RetakeDate:dd.MM.yyyy}");
-        //                    column.Item().Text($"Статус: {direction.Status}");
-        //                });
+                            column.Item()
+                                .Text("ПЕРМСКИЙ АВИАЦИОННЫЙ ТЕХНИКУМ ИМ. А.Д. ШВЕЦОВА")
+                                .FontSize(10)
+                                .AlignCenter()
+                                .Bold();
 
-        //            page.Content()
-        //                .PaddingVertical(20)
-        //                .Column(column =>
-        //                {
-        //                    column.Spacing(8);
+                            column.Item()
+                                .Text("НАПРАВЛЕНИЕ НА ПЕРЕСДАЧУ")
+                                .FontSize(14)
+                                .AlignCenter()
+                                .Bold();
 
-        //                    column.Item().Text($"Группа: {direction.GroupDiscipline.Group.Name}");
-        //                    column.Item().Text($"Дисциплина: {direction.GroupDiscipline.Discipline.Name}");
-        //                    column.Item().Text($"Тип аттестации: {direction.GroupDiscipline.AttestType.Name}");
-        //                    column.Item().Text($"Семестр: {direction.GroupDiscipline.Semester}");
-        //                    column.Item().Text($"Учебный год: {direction.GroupDiscipline.StudyYear}");
+                            column.Item()
+                                .Text("оценки промежуточной аттестации")
+                                .FontSize(11)
+                                .AlignCenter();
+                        });
 
-        //                    column.Item().PaddingTop(15).Text("Список студентов").Bold();
+                    page.Content()
+                        .PaddingVertical(15)
+                        .Column(column =>
+                        {
+                            column.Spacing(12);
 
-        //                    column.Item().Table(table =>
-        //                    {
-        //                        table.ColumnsDefinition(columns =>
-        //                        {
-        //                            columns.ConstantColumn(30);
-        //                            columns.RelativeColumn(4);
-        //                            columns.RelativeColumn(2);
-        //                            columns.RelativeColumn(2);
-        //                            columns.RelativeColumn(2);
-        //                        });
+                            // ФОРМА ПРОМЕЖУТОЧНОЙ АТТЕСТАЦИИ
+                            column.Item()
+                                .Column(innerColumn =>
+                                {
+                                    innerColumn.Item().Text("Форма промежуточной аттестации:").FontSize(10).Bold();
 
-        //                        table.Header(header =>
-        //                        {
-        //                            header.Cell().Element(CellStyle).Text("№").Bold();
-        //                            header.Cell().Element(CellStyle).Text("Студент").Bold();
-        //                            header.Cell().Element(CellStyle).Text("Оценка").Bold();
-        //                            header.Cell().Element(CellStyle).Text("Сдал").Bold();
-        //                            header.Cell().Element(CellStyle).Text("Дата").Bold();
-        //                        });
+                                    innerColumn.Item()
+                                        .PaddingTop(5)
+                                        .Row(row =>
+                                        {
+                                            row.ConstantColumn(15).Text("☐ Экзамен");
+                                            row.ConstantColumn(20).Text("                          ");
+                                            row.ConstantColumn(15).Text("☐ Диф.зачет");
+                                            row.ConstantColumn(20).Text("                           ");
+                                            row.RelativeColumn().Text("☐ Зачет");
+                                        });
 
-        //                        var students = direction.RetakeDirectionStudents
-        //                            .OrderBy(x => x.Student.LastName)
-        //                            .ThenBy(x => x.Student.FirstName)
-        //                            .ToList();
+                                    innerColumn.Item()
+                                        .Row(row =>
+                                        {
+                                            row.ConstantColumn(15).Text("☐ КП/КР");
+                                            row.ConstantColumn(20).Text("");
+                                            row.ConstantColumn(15).Text("☐ Инд.проект");
+                                            row.RelativeColumn().Text("");
+                                        });
+                                });
 
-        //                        for (int i = 0; i < students.Count; i++)
-        //                        {
-        //                            var item = students[i];
+                            // ОСНОВНАЯ ИНФОРМАЦИЯ
+                            column.Item()
+                                .Column(infoColumn =>
+                                {
+                                    infoColumn.Spacing(8);
 
-        //                            table.Cell().Element(CellStyle).Text((i + 1).ToString());
-        //                            table.Cell().Element(CellStyle).Text($"{item.Student.LastName} {item.Student.FirstName} {item.Student.Surname}".Trim());
-        //                            table.Cell().Element(CellStyle).Text(item.RetakeGradeValue.ToString());
-        //                            table.Cell().Element(CellStyle).Text(item.RetakeIsPassed ? "Да" : "Нет");
-        //                            table.Cell().Element(CellStyle).Text(item.RetakeGradeDate.ToString("dd.MM.yyyy"));
-        //                        }
-        //                    });
-        //                });
+                                    infoColumn.Item()
+                                        .Row(row =>
+                                        {
+                                            row.ConstantColumn(150).Text("Преподаватель");
+                                            row.RelativeColumn()
+                                                .BorderBottom(1)
+                                                .BorderColor(Colors.Black)
+                                                .PaddingBottom(2)
+                                                .Text(teacher.TeacherName ?? "_______________")
+                                                .FontSize(10);
+                                        });
 
-        //            page.Footer()
-        //                .AlignCenter()
-        //                .Text(x =>
-        //                {
-        //                    x.Span("Сгенерировано: ");
-        //                    x.Span(DateTime.Now.ToString("dd.MM.yyyy HH:mm"));
-        //                });
-        //        });
-        //    });
+                                    infoColumn.Item()
+                                        .Row(row =>
+                                        {
+                                            row.ConstantColumn(150).Text("Дисциплина");
+                                            row.RelativeColumn()
+                                                .BorderBottom(1)
+                                                .BorderColor(Colors.Black)
+                                                .PaddingBottom(2)
+                                                .Text(direction.Discipline.Name)
+                                                .FontSize(10);
+                                        });
 
-        //    return document.GeneratePdf();
-        //}
+                                    infoColumn.Item()
+                                        .Row(row =>
+                                        {
+                                            row.ConstantColumn(150).Text("Учебный период:");
+                                            row.ConstantColumn(50).Text($"{direction.Direction.Semester} семестр").FontSize(10);
+                                            row.ConstantColumn(30).Text($"20{direction.Direction.StudyYear}");
+                                            row.RelativeColumn()
+                                                .BorderBottom(1)
+                                                .BorderColor(Colors.Black)
+                                                .AlignRight()
+                                                .PaddingBottom(2)
+                                                .Text("уч.г.")
+                                                .FontSize(9);
+                                        });
 
-        //private static IContainer CellStyle(IContainer container)
-        //{
-        //    return container
-        //        .Border(1)
-        //        .BorderColor(Colors.Grey.Lighten2)
-        //        .PaddingVertical(5)
-        //        .PaddingHorizontal(6);
-        //}
+                                    infoColumn.Item()
+                                        .Row(row =>
+                                        {
+                                            row.ConstantColumn(150).Text("Группа:");
+                                            row.RelativeColumn()
+                                                .BorderBottom(1)
+                                                .BorderColor(Colors.Black)
+                                                .PaddingBottom(2)
+                                                .Text(direction.Group.Name)
+                                                .FontSize(10);
+                                        });
+                                });
+
+                            // ТАБЛИЦА СТУДЕНТОВ
+                            column.Item()
+                                .PaddingTop(15)
+                                .Table(table =>
+                                {
+                                    table.ColumnsDefinition(columns =>
+                                    {
+                                        columns.RelativeColumn(3f);
+                                        columns.RelativeColumn(2f);
+                                        columns.RelativeColumn(1.5f);
+                                    });
+
+                                    // Заголовок таблицы
+                                    table.Header(header =>
+                                    {
+                                        header.Cell().Element(HeaderCellStyle)
+                                            .Text("ФИО студента")
+                                            .Bold()
+                                            .FontSize(10);
+
+                                        header.Cell().Element(HeaderCellStyle)
+                                            .Text("Оценка")
+                                            .Bold()
+                                            .FontSize(10);
+
+                                        header.Cell().Element(HeaderCellStyle)
+                                            .Text("Подпись преподавателя")
+                                            .Bold()
+                                            .FontSize(10);
+                                    });
+
+                                    var students = direction.Students;
+
+                                    for (int i = 0; i < students.Count; i++)
+                                    {
+                                        var item = students[i];
+
+                                        table.Cell().Element(BodyCellStyle)
+                                            .Text($"{item.StudentName}")
+                                            .FontSize(10);
+
+                                        table.Cell().Element(BodyCellStyle)
+                                            .Text(item.GradeValue > 0 ? item.GradeValue.ToString() : "")
+                                            .FontSize(10)
+                                            .AlignCenter();
+
+                                        table.Cell().Element(BodyCellStyle)
+                                            .Text("");
+                                    }
+
+                                    // Добавить пустые строки
+                                    for (int i = students.Count; i < 8; i++)
+                                    {
+                                        table.Cell().Element(BodyCellStyle).Text("");
+                                        table.Cell().Element(BodyCellStyle).Text("");
+                                        table.Cell().Element(BodyCellStyle).Text("");
+                                    }
+                                });
+
+                            // ПОДПИСЬ И ДАТА
+                            column.Item()
+                                .PaddingTop(20)
+                                .Row(row =>
+                                {
+                                    row.ConstantColumn(100).Text("«____»");
+                                    row.ConstantColumn(150)
+                                        .BorderBottom(1)
+                                        .BorderColor(Colors.Black)
+                                        .PaddingBottom(2)
+                                        .Text("_________________")
+                                        .FontSize(9);
+                                    row.ConstantColumn(50).AlignRight().Text($"{DateTime.Now.Day}__ г.");
+                                });
+
+                            // ПРИМЕЧАНИЕ
+                            column.Item()
+                                .PaddingTop(10)
+                                .Text("Данный бланк сдаётся в учебную часть ЛИЧНО ПРЕПОДАВАТЕЛЕМ в день приёма задолженности")
+                                .FontSize(9)
+                                .AlignCenter()
+                                .Bold();
+                        });
+                });
+            });
+
+            return document.GeneratePdf();
+        }
+
+        private static IContainer HeaderCellStyle(IContainer container)
+        {
+            return container
+                .Border(1)
+                .BorderColor(Colors.Black)
+                .PaddingVertical(6)
+                .PaddingHorizontal(5);
+        }
+
+        private static IContainer BodyCellStyle(IContainer container)
+        {
+            return container
+                .Border(1)
+                .BorderColor(Colors.Black)
+                .PaddingVertical(10)
+                .PaddingHorizontal(5)
+                .MinHeight(25);
+        }
     }
 }
