@@ -20,17 +20,15 @@ public class AuthRepository : IAuthRepository
     {
         return await _context.Users.FirstOrDefaultAsync(u => u.Login == login);
     }
-
-    public async Task<ScheduleUser?> GetByIdAsync(uint id)
-    {
-        return await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
-    }
-
     public async Task<bool> ValidatePasswordAsync(ScheduleUser user, string password)
     {
         return await Task.FromResult(BCrypt.Net.BCrypt.Verify(password, user.Password));
     }
 
+    public async Task<ScheduleUser?> GetByIdAsync(uint id)
+    {
+        return await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
+    }
 
     public async Task<bool> LoginExistsAsync(string login)
     {

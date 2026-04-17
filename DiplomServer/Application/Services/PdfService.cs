@@ -1,4 +1,6 @@
-﻿using DiplomServer.Application.Interfaces;
+﻿using DiplomServer.Application.DTOs.Auth;
+using DiplomServer.Application.DTOs.RetakeDirections;
+using DiplomServer.Application.Interfaces;
 using DiplomServer.Domain.Entities;
 using DiplomServer.Infrastructure.Documents;
 using DiplomServer.Infrastructure.Repositories;
@@ -24,16 +26,22 @@ namespace DiplomServer.Application.Services
             _authService = authService;
         }
 
-        public async Task<byte[]> GenerateRetakeDirectionPdfAsync(uint retakeDirectionId)
+
+        public async Task<byte[]> GenerateRetakeDirectionPdfAsync(IList<uint> retakeDirectionIds)
         {
             if (!_currentUserService.TeacherId.HasValue)
                 throw new UnauthorizedAccessException("TeacherId отсутствует.");
 
-            var teacherId = _currentUserService.TeacherId.Value;
-
-            var direction = await _retakeDirectionService.GetByIdAsync(retakeDirectionId);
             var teacher = await _authService.GetCurrentUserAsync();
-            return _pdfGenerator.GenerateRetakeDirectionPdf(direction, teacher);
+
+            var items = new List<(RetakeDirectionDetailsDto, CurrentUserDto)>();
+            foreach (var id in retakeDirectionIds)
+            {
+                var direction = await _retakeDirectionService.GetByIdAsync(id);
+                items.Add((direction, teacher));
+            }
+
+            return _pdfGenerator.GenerateRetakeDirectionPdf(items);
         }
     }
 }

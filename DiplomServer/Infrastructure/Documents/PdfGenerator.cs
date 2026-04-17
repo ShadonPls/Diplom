@@ -1,246 +1,217 @@
 ﻿using DiplomServer.Application.DTOs.Auth;
 using DiplomServer.Application.DTOs.RetakeDirections;
-using DiplomServer.Domain.Entities;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
+using System.Globalization;
 
 namespace DiplomServer.Infrastructure.Documents
 {
     public class PdfGenerator
     {
-        public byte[] GenerateRetakeDirectionPdf(RetakeDirectionDetailsDto direction, CurrentUserDto teacher)
+        // PdfGenerator.cs
+
+        public byte[] GenerateRetakeDirectionPdf(
+            IList<(RetakeDirectionDetailsDto Direction, CurrentUserDto Teacher)> items)
         {
             QuestPDF.Settings.License = LicenseType.Community;
 
             var document = Document.Create(container =>
             {
-                container.Page(page =>
+                for (int i = 0; i < items.Count; i += 2)
                 {
-                    page.Size(PageSizes.A4);
-                    page.Margin(20);
-                    page.DefaultTextStyle(x => x.FontSize(11).FontFamily("Arial"));
+                    var left = items[i];
+                    var hasRight = i + 1 < items.Count;
+                    var right = hasRight ? items[i + 1] : default;
 
-                    // ЗАГОЛОВОК
-                    page.Header()
-                        .Column(column =>
-                        {
-                            column.Spacing(3);
+                    container.Page(page =>
+                    {
+                        page.Size(PageSizes.A4.Landscape());
+                        page.Margin(10);
+                        page.DefaultTextStyle(x => x.FontSize(8).FontFamily("Arial"));
+                        page.Header().Height(0);
 
-                            column.Item()
-                                .Text("ПЕРМСКИЙ АВИАЦИОННЫЙ ТЕХНИКУМ ИМ. А.Д. ШВЕЦОВА")
-                                .FontSize(10)
-                                .AlignCenter()
-                                .Bold();
+                        page.Content()
+                            .Padding(5)
+                            .Row(row =>
+                            {
+                                row.RelativeColumn(0.5f)
+                                   .PaddingRight(5)
+                                   .Element(ComposeDocument(left.Direction, left.Teacher));
 
-                            column.Item()
-                                .Text("НАПРАВЛЕНИЕ НА ПЕРЕСДАЧУ")
-                                .FontSize(14)
-                                .AlignCenter()
-                                .Bold();
-
-                            column.Item()
-                                .Text("оценки промежуточной аттестации")
-                                .FontSize(11)
-                                .AlignCenter();
-                        });
-
-                    page.Content()
-                        .PaddingVertical(15)
-                        .Column(column =>
-                        {
-                            column.Spacing(12);
-
-                            // ФОРМА ПРОМЕЖУТОЧНОЙ АТТЕСТАЦИИ
-                            column.Item()
-                                .Column(innerColumn =>
+                                if (hasRight)
                                 {
-                                    innerColumn.Item().Text("Форма промежуточной аттестации:").FontSize(10).Bold();
-
-                                    innerColumn.Item()
-                                        .PaddingTop(5)
-                                        .Row(row =>
-                                        {
-                                            row.ConstantColumn(15).Text("☐ Экзамен");
-                                            row.ConstantColumn(20).Text("                          ");
-                                            row.ConstantColumn(15).Text("☐ Диф.зачет");
-                                            row.ConstantColumn(20).Text("                           ");
-                                            row.RelativeColumn().Text("☐ Зачет");
-                                        });
-
-                                    innerColumn.Item()
-                                        .Row(row =>
-                                        {
-                                            row.ConstantColumn(15).Text("☐ КП/КР");
-                                            row.ConstantColumn(20).Text("");
-                                            row.ConstantColumn(15).Text("☐ Инд.проект");
-                                            row.RelativeColumn().Text("");
-                                        });
-                                });
-
-                            // ОСНОВНАЯ ИНФОРМАЦИЯ
-                            column.Item()
-                                .Column(infoColumn =>
+                                    row.RelativeColumn(0.5f)
+                                       .PaddingLeft(5)
+                                       .Element(ComposeDocument(right.Direction, right.Teacher));
+                                }
+                                else
                                 {
-                                    infoColumn.Spacing(8);
-
-                                    infoColumn.Item()
-                                        .Row(row =>
-                                        {
-                                            row.ConstantColumn(150).Text("Преподаватель");
-                                            row.RelativeColumn()
-                                                .BorderBottom(1)
-                                                .BorderColor(Colors.Black)
-                                                .PaddingBottom(2)
-                                                .Text(teacher.TeacherName ?? "_______________")
-                                                .FontSize(10);
-                                        });
-
-                                    infoColumn.Item()
-                                        .Row(row =>
-                                        {
-                                            row.ConstantColumn(150).Text("Дисциплина");
-                                            row.RelativeColumn()
-                                                .BorderBottom(1)
-                                                .BorderColor(Colors.Black)
-                                                .PaddingBottom(2)
-                                                .Text(direction.Discipline.Name)
-                                                .FontSize(10);
-                                        });
-
-                                    infoColumn.Item()
-                                        .Row(row =>
-                                        {
-                                            row.ConstantColumn(150).Text("Учебный период:");
-                                            row.ConstantColumn(50).Text($"{direction.Direction.Semester} семестр").FontSize(10);
-                                            row.ConstantColumn(30).Text($"20{direction.Direction.StudyYear}");
-                                            row.RelativeColumn()
-                                                .BorderBottom(1)
-                                                .BorderColor(Colors.Black)
-                                                .AlignRight()
-                                                .PaddingBottom(2)
-                                                .Text("уч.г.")
-                                                .FontSize(9);
-                                        });
-
-                                    infoColumn.Item()
-                                        .Row(row =>
-                                        {
-                                            row.ConstantColumn(150).Text("Группа:");
-                                            row.RelativeColumn()
-                                                .BorderBottom(1)
-                                                .BorderColor(Colors.Black)
-                                                .PaddingBottom(2)
-                                                .Text(direction.Group.Name)
-                                                .FontSize(10);
-                                        });
-                                });
-
-                            // ТАБЛИЦА СТУДЕНТОВ
-                            column.Item()
-                                .PaddingTop(15)
-                                .Table(table =>
-                                {
-                                    table.ColumnsDefinition(columns =>
-                                    {
-                                        columns.RelativeColumn(3f);
-                                        columns.RelativeColumn(2f);
-                                        columns.RelativeColumn(1.5f);
-                                    });
-
-                                    // Заголовок таблицы
-                                    table.Header(header =>
-                                    {
-                                        header.Cell().Element(HeaderCellStyle)
-                                            .Text("ФИО студента")
-                                            .Bold()
-                                            .FontSize(10);
-
-                                        header.Cell().Element(HeaderCellStyle)
-                                            .Text("Оценка")
-                                            .Bold()
-                                            .FontSize(10);
-
-                                        header.Cell().Element(HeaderCellStyle)
-                                            .Text("Подпись преподавателя")
-                                            .Bold()
-                                            .FontSize(10);
-                                    });
-
-                                    var students = direction.Students;
-
-                                    for (int i = 0; i < students.Count; i++)
-                                    {
-                                        var item = students[i];
-
-                                        table.Cell().Element(BodyCellStyle)
-                                            .Text($"{item.StudentName}")
-                                            .FontSize(10);
-
-                                        table.Cell().Element(BodyCellStyle)
-                                            .Text(item.GradeValue > 0 ? item.GradeValue.ToString() : "")
-                                            .FontSize(10)
-                                            .AlignCenter();
-
-                                        table.Cell().Element(BodyCellStyle)
-                                            .Text("");
-                                    }
-
-                                    // Добавить пустые строки
-                                    for (int i = students.Count; i < 8; i++)
-                                    {
-                                        table.Cell().Element(BodyCellStyle).Text("");
-                                        table.Cell().Element(BodyCellStyle).Text("");
-                                        table.Cell().Element(BodyCellStyle).Text("");
-                                    }
-                                });
-
-                            // ПОДПИСЬ И ДАТА
-                            column.Item()
-                                .PaddingTop(20)
-                                .Row(row =>
-                                {
-                                    row.ConstantColumn(100).Text("«____»");
-                                    row.ConstantColumn(150)
-                                        .BorderBottom(1)
-                                        .BorderColor(Colors.Black)
-                                        .PaddingBottom(2)
-                                        .Text("_________________")
-                                        .FontSize(9);
-                                    row.ConstantColumn(50).AlignRight().Text($"{DateTime.Now.Day}__ г.");
-                                });
-
-                            // ПРИМЕЧАНИЕ
-                            column.Item()
-                                .PaddingTop(10)
-                                .Text("Данный бланк сдаётся в учебную часть ЛИЧНО ПРЕПОДАВАТЕЛЕМ в день приёма задолженности")
-                                .FontSize(9)
-                                .AlignCenter()
-                                .Bold();
-                        });
-                });
+                                    // Пустая правая половина
+                                    row.RelativeColumn(0.5f).Element(c => c.Text(""));
+                                }
+                            });
+                    });
+                }
             });
 
             return document.GeneratePdf();
         }
 
+        private static Action<IContainer> ComposeDocument(RetakeDirectionDetailsDto direction, CurrentUserDto teacher)
+        {
+            return container =>
+            {
+                container
+                    .Column(col =>
+                    {
+                        var monthLow = DateTime.Today.ToString("MMMM", new CultureInfo("ru-RU"));
+                        var month = char.ToUpper(monthLow[0]) + monthLow[1..];
+
+                        col.Spacing(6);
+
+                        // Заголовок
+                        col.Item().Column(hcol =>
+                        {
+                            hcol.Spacing(2);
+                            hcol.Item().Text("ПЕРМСКИЙ АВИАЦИОННЫЙ ТЕХНИКУМ ИМ. А.Д. ШВЕЦОВА")
+                                .FontSize(8).AlignCenter().Bold();
+                            hcol.Item().Text("НАПРАВЛЕНИЕ НА ПЕРЕСДАЧУ")
+                                .FontSize(10).AlignCenter().Bold();
+                            hcol.Item().Text("оценки промежуточной аттестации")
+                                .FontSize(10).AlignCenter();
+                        });
+
+                        col.Item().Text("Форма промежуточной аттестации:").FontSize(8).Bold();
+
+                        var attestTypeName = direction.AttestationType?.Name ?? string.Empty;
+
+                        col.Item().Row(row =>
+                        {
+                            row.ConstantColumn(70).Text(attestTypeName == "Экзамен" ? "☑ Экзамен" : "☐ Экзамен");
+                            row.ConstantColumn(15).Text("");
+                            row.ConstantColumn(70).Text(attestTypeName == "Диф.зачёт" ? "☑ Диф.зачет" : "☐ Диф.зачет");
+                            row.ConstantColumn(15).Text("");
+                            row.RelativeColumn().Text(attestTypeName == "Зачёт" ? "☑ Зачет" : "☐ Зачет");
+                        });
+
+                        col.Item().Row(row =>
+                        {
+                            row.ConstantColumn(70).Text(attestTypeName == "КП/КР" ? "☑ КП/КР" : "☐ КП/КР");
+                            row.ConstantColumn(15).Text("");
+                            row.ConstantColumn(70).Text(attestTypeName == "Инд.проект" ? "☑ Инд.проект" : "☐ Инд.проект");
+                            row.RelativeColumn().Text("");
+                        });
+
+                        // Основная информация
+                        col.Item().Column(infoCol =>
+                        {
+                            infoCol.Spacing(5);
+                            infoCol.Item().Row(row =>
+                            {
+                                row.ConstantColumn(70).Text("Преподаватель");
+                                row.RelativeColumn()
+                                    .BorderBottom(0.5f)
+                                    .BorderColor(Colors.Black)
+                                    .PaddingBottom(0.5f)
+                                    .Text(teacher.TeacherName ?? "_______________")
+                                    .FontSize(8);
+                            });
+                            infoCol.Item().Row(row =>
+                            {
+                                row.ConstantColumn(70).Text("Дисциплина");
+                                row.RelativeColumn()
+                                    .BorderBottom(0.5f)
+                                    .BorderColor(Colors.Black)
+                                    .PaddingBottom(0.5f)
+                                    .Text(direction.Discipline.Name)
+                                    .FontSize(8);
+                            });
+                            infoCol.Item().Row(row =>
+                            {
+                                row.ConstantColumn(80).Text("Учебный период:");
+                                row.ConstantColumn(30).Text($"{direction.Direction.Semester} сем.").FontSize(8);
+                                row.ConstantColumn(70).Text($"{direction.Direction.StudyYear} уч.г.");
+                            });
+                            infoCol.Item().Row(row =>
+                            {
+                                row.ConstantColumn(70).Text("Группа:");
+                                row.RelativeColumn()
+                                    .BorderBottom(0.5f)
+                                    .BorderColor(Colors.Black)
+                                    .PaddingBottom(0.5f)
+                                    .Text(direction.Group.Name)
+                                    .FontSize(8);
+                            });
+                        });
+
+                        // Таблица
+                        col.Item().PaddingTop(8).Table(table =>
+                        {
+                            table.ColumnsDefinition(cols =>
+                            {
+                                cols.RelativeColumn(3f);
+                                cols.RelativeColumn(1.5f);
+                                cols.RelativeColumn(2f);
+                            });
+
+                            table.Header(h =>
+                            {
+                                h.Cell().Element(HeaderCellStyle).Text("ФИО студента").Bold().FontSize(8).AlignCenter();
+                                h.Cell().Element(HeaderCellStyle).Text("Оценка").Bold().FontSize(8).AlignCenter();
+                                h.Cell().Element(HeaderCellStyle).Text("Подпись").Bold().FontSize(8).AlignCenter();
+                            });
+
+                            var students = direction.Students;
+                            int rowCount = Math.Min(students.Count, 6);
+                            for (int i = 0; i < rowCount; i++)
+                            {
+                                var item = students[i];
+                                table.Cell().Element(BodyCellStyle).Text(item.StudentName).FontSize(8).AlignCenter();
+                                table.Cell().Element(BodyCellStyle)
+                                    .Text(item.GradeValue > 0 ? item.GradeValue.ToString() : "")
+                                    .FontSize(8).AlignCenter();
+                                table.Cell().Element(BodyCellStyle).Text("");
+                            }
+                            for (int i = students.Count; i < 6; i++)
+                            {
+                                table.Cell().Element(BodyCellStyle).Text("");
+                                table.Cell().Element(BodyCellStyle).Text("");
+                                table.Cell().Element(BodyCellStyle).Text("");
+                            }
+                        });
+
+                        col.Item().PaddingTop(12).Row(row =>
+                        {
+                            row.ConstantColumn(15).Text($"«{DateTime.Today.Day}»");
+                            row.ConstantColumn(40)
+                                .BorderBottom(0.2f)
+                                .BorderColor(Colors.Black)
+                                .PaddingBottom(0.5f)
+                                .Text(month)
+                                .FontSize(8);
+                            row.ConstantColumn(40).AlignRight().Text($"{DateTime.Today.Year} г.");
+                        });
+
+                        // Примечание
+                        col.Item().PaddingTop(10)
+                            .Text("Данный бланк сдаётся в учебную часть ЛИЧНО ПРЕПОДАВАТЕЛЕМ")
+                            .FontSize(8).Bold();
+                    });
+            };
+        }
+
         private static IContainer HeaderCellStyle(IContainer container)
         {
-            return container
-                .Border(1)
-                .BorderColor(Colors.Black)
-                .PaddingVertical(6)
-                .PaddingHorizontal(5);
+            return container.Border(0.5f).BorderColor(Colors.Black)
+                .PaddingVertical(3).PaddingHorizontal(2);
         }
 
         private static IContainer BodyCellStyle(IContainer container)
         {
-            return container
-                .Border(1)
-                .BorderColor(Colors.Black)
-                .PaddingVertical(10)
-                .PaddingHorizontal(5)
-                .MinHeight(25);
+            return container.Border(0.5f).BorderColor(Colors.Black)
+                .PaddingVertical(2).PaddingHorizontal(2)
+                .MinHeight(8);
         }
     }
 }

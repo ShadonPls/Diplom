@@ -16,15 +16,16 @@ namespace DiplomServer.Controllers
             _pdfService = pdfService;
         }
 
-        [HttpGet("retake-directions/{id}/pdf")]
-        public async Task<IActionResult> GetRetakeDirectionPdf(uint id)
+
+        [HttpPost("retake-directions/pdf")]
+        public async Task<IActionResult> GetRetakeDirectionsPdf([FromBody] IList<uint> ids)
         {
-            var fileBytes = await _pdfService.GenerateRetakeDirectionPdfAsync(id);
+            var fileBytes = await _pdfService.GenerateRetakeDirectionPdfAsync(ids);
 
             return File(
                 fileBytes,
                 "application/pdf",
-                $"retake-direction-{id}.pdf");
+                "retake-directions.pdf");
         }
     }
 }

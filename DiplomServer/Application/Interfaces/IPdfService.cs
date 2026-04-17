@@ -2,6 +2,6 @@
 {
     public interface IPdfService
     {
-        Task<byte[]> GenerateRetakeDirectionPdfAsync(uint retakeDirectionId);
+        Task<byte[]> GenerateRetakeDirectionPdfAsync(IList<uint> retakeDirectionIds);
     }
 }
