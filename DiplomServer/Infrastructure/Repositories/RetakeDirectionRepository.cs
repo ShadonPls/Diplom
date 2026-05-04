@@ -1,4 +1,5 @@
-﻿using DiplomServer.Domain.Entities;
+﻿using DiplomServer.Application.DTOs.RetakeDirections;
+using DiplomServer.Domain.Entities;
 using DiplomServer.Domain.Enums;
 using DiplomServer.Infrastructure.Data;
 using DiplomServer.Infrastructure.Repositories.Interfaces;
@@ -48,11 +49,7 @@ namespace DiplomServer.Infrastructure.Repositories
         }
 
         public async Task<uint> GetOrCreateGroupDisciplineIdAsync(
-            uint groupId,
-            uint disciplineId,
-            uint attestTypeId,
-            int semester,
-            string studyYear)
+            uint groupId, uint disciplineId, uint attestTypeId, int semester, string studyYear)
         {
             var existingId = await _context.GroupDisciplines
                 .Where(gd => gd.GroupId == groupId &&
@@ -90,16 +87,35 @@ namespace DiplomServer.Infrastructure.Repositories
             }
         }
 
-        public async Task RemoveStudentsAsync(uint directionId)
+        public async Task UpdateStudentsAsync(RetakeDirection direction, UpdateRetakeDirectionRequestDto dto)
         {
-            var students = await _context.RetakeDirectionStudents
-                .Where(rr => rr.RetakeDirectionId == directionId)
-                .ToListAsync();
+            var existing = direction.RetakeDirectionStudents.ToDictionary(s => s.StudentId);
+            var incoming = dto.Students.ToDictionary(s => s.StudentId);
 
-            _context.RetakeDirectionStudents.RemoveRange(students);
+            var toRemove = direction.RetakeDirectionStudents.Where(s => !incoming.ContainsKey(s.StudentId));
+            _context.RetakeDirectionStudents.RemoveRange(toRemove);
+
+            foreach (var s in direction.RetakeDirectionStudents.Where(s => incoming.ContainsKey(s.StudentId)))
+            {
+                s.RetakeGradeValue = incoming[s.StudentId].GradeValue;
+                s.RetakeIsPassed = incoming[s.StudentId].GradeValue >= 3;
+                s.RetakeGradeDate = incoming[s.StudentId].GradeDate;
+            }
+
+            var newIds = incoming.Keys.Except(existing.Keys);
+            await _context.RetakeDirectionStudents.AddRangeAsync(
+                dto.Students.Where(s => newIds.Contains(s.StudentId)).Select(s => new RetakeDirectionStudent
+                {
+                    RetakeDirectionId = direction.Id,
+                    StudentId = s.StudentId,
+                    RetakeGradeValue = s.GradeValue,
+                    RetakeIsPassed = s.GradeValue >= 3,
+                    RetakeGradeDate = s.GradeDate
+                })
+            );
+
             await _context.SaveChangesAsync();
         }
-
         public async Task AddStudentsAsync(IEnumerable<RetakeDirectionStudent> students)
         {
             await _context.RetakeDirectionStudents.AddRangeAsync(students);

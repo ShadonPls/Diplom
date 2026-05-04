@@ -183,17 +183,21 @@ namespace DiplomServer.Infrastructure.Documents
 
                         col.Item().PaddingTop(12).Row(row =>
                         {
-                            row.ConstantColumn(15).Text($"«{DateTime.Today.Day}»");
+                            var Date = direction.Direction.CreatedAt;
+                            var day = Date.Day;
+                            if (day < 10)
+                                row.ConstantColumn(20).Text($"«0{day}»");
+                            else
+                                row.ConstantColumn(20).Text($"«{day}»");
                             row.ConstantColumn(40)
                                 .BorderBottom(0.2f)
                                 .BorderColor(Colors.Black)
                                 .PaddingBottom(0.5f)
                                 .Text(month)
                                 .FontSize(8);
-                            row.ConstantColumn(40).AlignRight().Text($"{DateTime.Today.Year} г.");
+                            row.ConstantColumn(40).AlignRight().Text($"{Date.Year} г.");
                         });
 
-                        // Примечание
                         col.Item().PaddingTop(10)
                             .Text("Данный бланк сдаётся в учебную часть ЛИЧНО ПРЕПОДАВАТЕЛЕМ")
                             .FontSize(8).Bold();

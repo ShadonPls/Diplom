@@ -19,9 +19,9 @@ namespace DiplomServer.Infrastructure.Repositories
             _scheduleContext = scheduleContext;
             _vrContext = vrContext;
         }
-        public async Task<List<ScheduleDiscipline>> GetTeacherDisciplinesAsync(uint teacherId)
+        public async Task<List<TypeDto>> GetTeacherDisciplinesAsync(uint teacherId)
         {
-            return await _scheduleContext.Disciplines
+            var disciplines = await _scheduleContext.Disciplines
                 .Join(
                     _scheduleContext.PlansDisciplines,
                     d => d.Id,
@@ -37,35 +37,20 @@ namespace DiplomServer.Infrastructure.Repositories
                 .Distinct()
                 .OrderBy(d => d.Name)
                 .ToListAsync();
-        }
-        public async Task<List<TypeDto>> GetGroupsAsync()
-        {
-            var rawGroups = await _scheduleContext.Groups
-            .Join(
-                _scheduleContext.AcademicPlans,
-                g => g.id_academic_plans,
-                ap => ap.Id,
-                (g, ap) => new
-                {
-                    Id = g.Id,
-                    AcademicPlanName = ap.Name,
-                    Number = g.Number
-                })
-            .OrderBy(x => x.AcademicPlanName)
-            .ThenBy(x => x.Number)
-            .ToListAsync();
 
-            var groups = rawGroups.Select(x => new
-            {
-                Id = x.Id,
-                Name = $"{x.AcademicPlanName}-{x.Number}"
-            }).ToList();
-
-            return groups.Select(g => new TypeDto
+            return disciplines.Select(g => new TypeDto
             {
                 Id = (int)g.Id,
                 Name = g.Name
             }).ToList();
+        }
+        public async Task<List<TypeDto>> GetGroupsAsync()
+        {
+            return await _scheduleContext.Groups
+            .Join(_scheduleContext.AcademicPlans, g => g.id_academic_plans, ap => ap.Id, (g, ap) => new { g, ap })
+            .OrderBy(x => x.ap.Name).ThenBy(x => x.g.Number)
+            .Select(x => new TypeDto { Id = (int)x.g.Id, Name = $"{x.ap.Name}-{x.g.Number}" })
+            .ToListAsync();
         }
 
         public async Task<List<TypeDto>> GetGroupStudentsAsync(uint groupId)
@@ -116,13 +101,13 @@ namespace DiplomServer.Infrastructure.Repositories
             return students.ToDictionary(s => s.Id, s => s);
         }
 
-        public async Task<List<ScheduleAttestation>> GetAttestTypesAsync()
+        public async Task<List<TypeDto>> GetAttestTypesAsync()
         {
             return await _scheduleContext.Attestations
                 .OrderBy(a => a.Name)
-                .Select(a => new ScheduleAttestation
+                .Select(a => new TypeDto
                 {
-                    Id = a.Id,
+                    Id = (int)a.Id,
                     Name = a.Name
                 })
                 .ToListAsync();
@@ -136,9 +121,7 @@ namespace DiplomServer.Infrastructure.Repositories
                 .Select(a => new TypeDto
                 {
                     Id = (int)a.Id,
-                    Name = (a.first_name ?? "") + " " +
-                   (a.middle_name ?? "") + " " +
-                   (a.last_name ?? "")
+                    Name = $"{a.first_name} {a.middle_name} {a.last_name}".Trim()
                 })
                 .ToListAsync();
         }
@@ -146,27 +129,9 @@ namespace DiplomServer.Infrastructure.Repositories
 
         public async Task<TypeDto> GetGroupByIdAsync(uint groupId)
         {
-            var groupRow = await _scheduleContext.Groups
-                .Join(
-                    _scheduleContext.AcademicPlans,
-                    g => g.id_academic_plans,
-                    ap => ap.Id,
-                    (g, ap) => new
-                    {
-                        Id = g.Id,
-                        Name = $"{ap.Name}-{g.Number}"
-                    })
-                .Where(x => x.Id == (int)groupId)
-                .FirstOrDefaultAsync();
-
-            if (groupRow is null)
-                throw new KeyNotFoundException($"Группа {groupId} не найдена.");
-
-            return new TypeDto
-            {
-                Id = (int)groupRow.Id,
-                Name = groupRow.Name
-            };
+            return await _scheduleContext.Groups
+                .Join(_scheduleContext.AcademicPlans, g => g.id_academic_plans, ap => ap.Id, (g, ap) => new TypeDto { Id = (int)g.Id, Name = $"{ap.Name}-{g.Number}" })
+                .FirstOrDefaultAsync(x => x.Id == (int)groupId);
         }
 
         public async Task<TypeDto> GetDisciplineByIdAsync(uint disciplineId)

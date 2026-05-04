@@ -10,6 +10,7 @@ namespace DiplomServer.Infrastructure.Data
         public string Surname { get; set; } = "";
         public string Group { get; set; } = "";
         public string? Deduction { get; set; }
+        
     }
 
     public class VrDbContext : DbContext

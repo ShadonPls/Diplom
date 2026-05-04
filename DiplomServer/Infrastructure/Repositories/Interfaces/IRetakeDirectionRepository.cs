@@ -1,4 +1,5 @@
-﻿using DiplomServer.Domain.Entities;
+﻿using DiplomServer.Application.DTOs.RetakeDirections;
+using DiplomServer.Domain.Entities;
 
 namespace DiplomServer.Infrastructure.Repositories.Interfaces
 {
@@ -16,7 +17,7 @@ namespace DiplomServer.Infrastructure.Repositories.Interfaces
             int semester,
             string studyYear);
         
-        Task RemoveStudentsAsync(uint directionId);
+        Task UpdateStudentsAsync(RetakeDirection direction, UpdateRetakeDirectionRequestDto dto);
         Task AddStudentsAsync(IEnumerable<RetakeDirectionStudent> students);
     }
 }

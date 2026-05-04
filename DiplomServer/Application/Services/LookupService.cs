@@ -19,9 +19,6 @@ namespace DiplomServer.Application.Services
 
         public async Task<List<SelectListItemDto>> GetTeacherDisciplinesAsync()
         {
-            if (!_currentUserService.TeacherId.HasValue)
-                throw new UnauthorizedAccessException("TeacherId отсутствует.");
-
             var disciplines = await _lookupRepository.GetTeacherDisciplinesAsync(_currentUserService.TeacherId.Value);
 
             return disciplines.Select(d => new SelectListItemDto
@@ -31,38 +28,9 @@ namespace DiplomServer.Application.Services
             }).ToList();
         }
 
-        public async Task<List<TypeDto>> GetAttestTypesAsync()
-        {
-            var attestTypes = await _lookupRepository.GetAttestTypesAsync();
-
-            return attestTypes.Select(a => new TypeDto
-            {
-                Id = (int)a.Id,
-                Name = a.Name
-            }).ToList();
-        }
-
-        public async Task<List<TypeDto>> GetGroupsAsync()
-        {
-            var groups = await _lookupRepository.GetGroupsAsync();
-
-            return groups.Select(g => new TypeDto
-            {
-                Id = g.Id,
-                Name = g.Name
-            }).ToList();
-        }
-
-        public async Task<List<TypeDto>> GetTeachersAsync()
-        {
-            var groups = await _lookupRepository.GetTeachersAsync();
-
-            return groups.Select(g => new TypeDto
-            {
-                Id = g.Id,
-                Name = g.Name
-            }).ToList();
-        }
+        public async Task<List<TypeDto>> GetAttestTypesAsync() => await _lookupRepository.GetAttestTypesAsync();
+        public async Task<List<TypeDto>> GetGroupsAsync() => await _lookupRepository.GetGroupsAsync();
+        public async Task<List<TypeDto>> GetTeachersAsync() => await _lookupRepository.GetTeachersAsync();
         public async Task<List<SelectListItemDto>> GetSemestrByGroupAsync(uint groupId)
         {
             var groups = await _lookupRepository.GetSemestersByGroupIdAsync(groupId);
@@ -84,17 +52,7 @@ namespace DiplomServer.Application.Services
             }).ToList();
         }
 
-
-        public async Task<TypeDto> GetGroupByIdAsync(uint groupId)
-        {
-            var group = await _lookupRepository.GetGroupByIdAsync(groupId);
-            return new TypeDto
-            {
-                Id = group.Id,
-                Name = group.Name
-            };
-        }
-
+        
         public async Task<List<SelectListItemDto>> GetGroupsByDisciplineIdAsync(uint disciplineId)
         {
             var groups = await _lookupRepository.GetGroupsByDisciplineIdAsync(disciplineId);
@@ -105,15 +63,6 @@ namespace DiplomServer.Application.Services
             }).ToList();
         }
         
-        public async Task<TypeDto> GetDisciplineByIdAsync(uint disciplineId)
-        {
-            var discipline = await _lookupRepository.GetDisciplineByIdAsync(disciplineId);
-            return new TypeDto
-            {
-                Id = discipline.Id,
-                Name = discipline.Name
-            };
-        }
         public async Task<Dictionary<uint, TypeDto>> GetStudentsDictionaryByIdAsync(IEnumerable<uint> studentIds)
         {
             var students = await _lookupRepository.GetStudentsByIdsAsync(studentIds);
@@ -126,15 +75,19 @@ namespace DiplomServer.Application.Services
                 });
         }
 
-        public async Task<TypeDto> GetAttestationByIdAsync(uint attestationTypeId)
-        {
-            var type = await _lookupRepository.GetAttestationByIdAsync(attestationTypeId);
-            return new TypeDto
-            {
-                Id = type.Id,
-                Name = type.Name
-            };
-        }
+        public async Task<TypeDto> GetDisciplineByIdAsync(uint disciplineId) =>
+            await GetByIdOrThrow(disciplineId, _lookupRepository.GetDisciplineByIdAsync, "Дисциплина");
 
+        public async Task<TypeDto> GetAttestationByIdAsync(uint attestationTypeId) =>
+            await GetByIdOrThrow(attestationTypeId, _lookupRepository.GetAttestationByIdAsync, "Тип атестации");
+        public async Task<TypeDto> GetGroupByIdAsync(uint groupId) =>
+            await GetByIdOrThrow(groupId, _lookupRepository.GetGroupByIdAsync, "Группа");
+
+        private async Task<T> GetByIdOrThrow<T>(uint id, Func<uint, Task<T>> repositoryCall, string entityName)
+        {
+            var result = await repositoryCall(id);
+            if (result == null) throw new KeyNotFoundException($"{entityName} {id} не найдена.");
+            return result;
+        }
     }
 }
