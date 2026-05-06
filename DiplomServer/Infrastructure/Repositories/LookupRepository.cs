@@ -11,39 +11,18 @@ namespace DiplomServer.Infrastructure.Repositories
     {
         private readonly ScheduleDbContext _scheduleContext;
         private readonly VrDbContext _vrContext;
+        private readonly AppDbContext _appDbContext;
 
         public LookupRepository(
             ScheduleDbContext scheduleContext,
-            VrDbContext vrContext)
+            VrDbContext vrContext,
+            AppDbContext appDbContext)
         {
             _scheduleContext = scheduleContext;
             _vrContext = vrContext;
+            _appDbContext = appDbContext;
         }
-        public async Task<List<TypeDto>> GetTeacherDisciplinesAsync(uint teacherId)
-        {
-            var disciplines = await _scheduleContext.Disciplines
-                .Join(
-                    _scheduleContext.PlansDisciplines,
-                    d => d.Id,
-                    pd => pd.id_discipline,
-                    (d, pd) => new { d, pd })
-                .Join(
-                    _scheduleContext.TeachersDisciplines,
-                    x => x.pd.Id,
-                    td => td.id_plan_discipline,
-                    (x, td) => new { x.d, td })
-                .Where(x => x.td.id_teacher == (int)teacherId)
-                .Select(x => x.d)
-                .Distinct()
-                .OrderBy(d => d.Name)
-                .ToListAsync();
-
-            return disciplines.Select(g => new TypeDto
-            {
-                Id = (int)g.Id,
-                Name = g.Name
-            }).ToList();
-        }
+        
         public async Task<List<TypeDto>> GetGroupsAsync()
         {
             return await _scheduleContext.Groups
@@ -81,6 +60,57 @@ namespace DiplomServer.Infrastructure.Repositories
                 })
                 .ToListAsync();
         }
+        public async Task<List<TypeDto>> GetTeacherDisciplinesAsync(uint teacherId)
+        {
+            var disciplines = await _scheduleContext.Disciplines
+                .Join(
+                    _scheduleContext.PlansDisciplines,
+                    d => d.Id,
+                    pd => pd.id_discipline,
+                    (d, pd) => new { d, pd })
+                .Join(
+                    _scheduleContext.TeachersDisciplines,
+                    x => x.pd.Id,
+                    td => td.id_plan_discipline,
+                    (x, td) => new { x.d, td })
+                .Where(x => x.td.id_teacher == (int)teacherId)
+                .Select(x => x.d)
+                .Distinct()
+                .OrderBy(d => d.Name)
+                .ToListAsync();
+
+            return disciplines.Select(g => new TypeDto
+            {
+                Id = (int)g.Id,
+                Name = g.Name
+            }).ToList();
+        }
+
+        public async Task<List<TypeDto>> GetTeachersByDisciplineAsync(uint disciplineId)
+        {
+            var teachers = await _scheduleContext.Teachers
+                .Join(
+                    _scheduleContext.TeachersDisciplines,
+                    t => (int)t.Id,
+                    td => td.id_teacher,
+                    (t, td) => new { t, td })
+                .Join(
+                    _scheduleContext.PlansDisciplines,
+                    x => x.td.id_plan_discipline,
+                    pd => pd.Id,
+                    (x, pd) => new { x.t, pd })
+                .Where(x => x.pd.id_discipline == (int)disciplineId)
+                .Select(x => x.t)
+                .Distinct()
+                .OrderBy(t => t.last_name)
+                .ToListAsync();
+
+            return teachers.Select(t => new TypeDto
+            {
+                Id = (int)t.Id,
+                Name = $"{t.last_name} {t.first_name} {t.middle_name}".Trim()
+            }).ToList();
+        }
         public async Task<Dictionary<uint, VrStudent>> GetStudentsByIdsAsync(IEnumerable<uint> studentIds)
         {
             if (!studentIds.Any())
@@ -101,6 +131,40 @@ namespace DiplomServer.Infrastructure.Repositories
             return students.ToDictionary(s => s.Id, s => s);
         }
 
+        public async Task<Dictionary<uint, ScheduleTeacher>> GetTeachersByIdsAsync(IEnumerable<uint> teachersId)
+        {
+            if (!teachersId.Any())
+                return new Dictionary<uint, ScheduleTeacher>();
+
+            var students = await _scheduleContext.Teachers
+                .Where(s => teachersId.Contains((uint)s.Id))
+                .Select(s => new ScheduleTeacher
+                {
+                    Id = (uint)s.Id,
+                    first_name = s.first_name,
+                    last_name = s.last_name,
+                    middle_name = s.middle_name
+                })
+                .ToListAsync();
+
+            return students.ToDictionary(s => s.Id, s => s);
+        }
+
+        public async Task<StudentTypeDto> GetStudentById(uint studentIds)
+        {
+            var students = await _vrContext.Students
+                .Where(s => s.Id == studentIds)
+                .Select(s => new StudentTypeDto
+                {
+                    Id = (int)s.Id,
+                    Name = $"{s.Lastname} {s.Firstname} {s.Surname}",
+                    Group = $"{s.Group}"
+                })
+                .FirstOrDefaultAsync();
+
+            return students;
+        }
+
         public async Task<List<TypeDto>> GetAttestTypesAsync()
         {
             return await _scheduleContext.Attestations
@@ -112,12 +176,23 @@ namespace DiplomServer.Infrastructure.Repositories
                 })
                 .ToListAsync();
         }
-
         public async Task<List<TypeDto>> GetTeachersAsync()
         {
             return await _scheduleContext.Teachers
                 .OrderBy(a => a.first_name)
-                .Where(x=>x.Delete == 0 && x.Id >0 && x.middle_name != "" && x.first_name != "" && x.last_name != "")
+                .Where(x => x.Delete == 0 && x.Id > 0 && x.middle_name != "" && x.first_name != "" && x.last_name != "")
+                .Select(a => new TypeDto
+                {
+                    Id = (int)a.Id,
+                    Name = $"{a.first_name} {a.middle_name} {a.last_name}".Trim()
+                })
+                .ToListAsync();
+        }
+        public async Task<List<TypeDto>> GetTeachersByIdAsync(uint teacherId)
+        {
+            return await _scheduleContext.Teachers
+                .OrderBy(a => a.first_name)
+                .Where(x=>x.Delete == 0 && x.Id == teacherId && x.middle_name != "" && x.first_name != "" && x.last_name != "")
                 .Select(a => new TypeDto
                 {
                     Id = (int)a.Id,
@@ -260,6 +335,49 @@ namespace DiplomServer.Infrastructure.Repositories
                 Id = (int)type.Id,
                 Name = type.Name
             };
+        }
+
+        public async Task<List<TypeDto>> GetStudentsWithDebtsAsync()
+        {
+            var studentIds = await _appDbContext.AcademicDebts
+                .Select(d => d.StudentId)
+                .Distinct()
+                .ToListAsync();
+
+            if (!studentIds.Any())
+                return new List<TypeDto>();
+
+            return await _vrContext.Students
+                .Where(s => studentIds.Contains((uint)s.Id))
+                .OrderBy(s => s.Lastname)
+                .Select(s => new TypeDto
+                {
+                    Id = (int)s.Id,
+                    Name = $"{s.Lastname} {s.Firstname} {s.Surname}"
+                })
+                .ToListAsync();
+        }
+
+        public async Task<List<TypeDto>> GetStudentDebtsDisciplinesAsync(uint studentId)
+        {
+            var disciplineIds = await _appDbContext.AcademicDebts
+                .Where(d => d.StudentId == studentId)
+                .Select(d => d.DisciplineId)
+                .Distinct()
+                .ToListAsync();
+
+            if (!disciplineIds.Any())
+                return new List<TypeDto>();
+
+            return await _scheduleContext.Disciplines
+                .Where(d => disciplineIds.Contains((uint)d.Id))
+                .Select(d => new TypeDto
+                {
+                    Id = (int)d.Id,
+                    Name = d.Name
+                })
+                .OrderBy(d => d.Name)
+                .ToListAsync();
         }
     }
 }

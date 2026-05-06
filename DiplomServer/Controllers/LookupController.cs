@@ -23,10 +23,21 @@ namespace DiplomServer.Controllers
             return Ok(await _lookupService.GetTeacherDisciplinesAsync());
         }
 
+        [HttpGet("teacher/{disciplineId}")]
+        public async Task<ActionResult<List<SelectListItemDto>>> GetTeacherByDisciplines(uint disciplineId)
+        {
+            return Ok(await _lookupService.GetTeacherByDisciplinesAsync(disciplineId));
+        }
+
         [HttpGet("attest-types")]
         public async Task<ActionResult<List<SelectListItemDto>>> GetAttestTypes()
         {
             return Ok(await _lookupService.GetAttestTypesAsync());
+        }
+        [HttpGet("teachers/{teacherId}")]
+        public async Task<ActionResult<List<SelectListItemDto>>> GetTeachers(uint teacherId)
+        {
+            return Ok(await _lookupService.GetTeachersByIdAsync(teacherId));
         }
         [HttpGet("teachers")]
         public async Task<ActionResult<List<SelectListItemDto>>> GetTeachers()
@@ -55,5 +66,18 @@ namespace DiplomServer.Controllers
         {
             return Ok(await _lookupService.GetGroupStudentsAsync(groupId));
         }
+
+        [HttpGet("students/academicDebts")]
+        public async Task<ActionResult<List<SelectListItemDto>>> GetStudentsDebts()
+        {
+            return Ok(await _lookupService.GetStudentsDebts());
+        }
+
+        [HttpGet("disciplines/{studentId}/academicDebts")]
+        public async Task<ActionResult<List<SelectListItemDto>>> GetDisciplinesStudentDebts(uint studentId)
+        {
+            return Ok(await _lookupService.GetDisciplinesStudentsDebts(studentId));
+        }
+        
     }
 }

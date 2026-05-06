@@ -16,12 +16,17 @@ namespace DiplomServer.Infrastructure.Data
         public DbSet<ReceptionTeacher> ReceptionTeachers => Set<ReceptionTeacher>();
         public DbSet<ReceptionCommission> ReceptionCommissions => Set<ReceptionCommission>();
 
-
+        public DbSet<AcademicDebts> AcademicDebts => Set<AcademicDebts>();
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<GroupDiscipline>(entity =>
             {
                 entity.ToTable("GroupDisciplines");
+                entity.HasKey(x => x.Id);
+            });
+            modelBuilder.Entity<AcademicDebts>(entity =>
+            {
+                entity.ToTable("AcademicDebts");
                 entity.HasKey(x => x.Id);
             });
 

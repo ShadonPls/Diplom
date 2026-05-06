@@ -2,9 +2,9 @@
 {
     public class ReceptionTeacher
     {
-        public int Id { get; set; }
-        public int OrderId { get; set; }
-        public int TeacherId { get; set; }
+        public uint Id { get; set; }
+        public uint OrderId { get; set; }
+        public uint TeacherId { get; set; }
         public Orders Order { get; set; }
     }
 }

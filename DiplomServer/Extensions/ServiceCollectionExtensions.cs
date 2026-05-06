@@ -155,6 +155,8 @@ namespace DiplomServer.Extensions
             services.AddScoped<IRetakeDirectionService, RetakeDirectionService>();
             services.AddScoped<ILookupService, LookupService>();
             services.AddScoped<IPdfService, PdfService>();
+            services.AddScoped<IOrdersService, OrdersService>();
+            services.AddScoped<IExcelParser, ExcelParser>();
 
             services.AddScoped<JwtTokenGenerator>();
             services.AddScoped<PdfGenerator>();
@@ -170,6 +172,7 @@ namespace DiplomServer.Extensions
             services.AddScoped<IAuthRepository, AuthRepository>();
             services.AddScoped<IRetakeDirectionRepository, RetakeDirectionRepository>();
             services.AddScoped<ILookupRepository, LookupRepository>();
+            services.AddScoped<IOrdersRepository, OrdersRepository>();
 
             return services;
         }

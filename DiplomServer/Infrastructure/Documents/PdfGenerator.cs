@@ -1,4 +1,5 @@
 ﻿using DiplomServer.Application.DTOs.Auth;
+using DiplomServer.Application.DTOs.Orders;
 using DiplomServer.Application.DTOs.RetakeDirections;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
@@ -216,6 +217,193 @@ namespace DiplomServer.Infrastructure.Documents
             return container.Border(0.5f).BorderColor(Colors.Black)
                 .PaddingVertical(2).PaddingHorizontal(2)
                 .MinHeight(8);
+        }
+
+        public byte[] GenerateOrderPdf(IList<(OrdersResponseDto Details, CurrentUserDto Teacher)> items)
+        {
+            QuestPDF.Settings.License = LicenseType.Community;
+
+            var document = Document.Create(container =>
+            {
+                foreach (var item in items)
+                {
+                    container.Page(page =>
+                    {
+                        page.Size(PageSizes.A4); // Книжная ориентация
+                        page.Margin(20, Unit.Millimetre); // Стандартные поля для документов
+                        page.DefaultTextStyle(x => x.FontSize(12).FontFamily("Times New Roman"));
+
+                        page.Content().Element(ComposeOrderDocument(item.Details));
+                    });
+                }
+            });
+
+            return document.GeneratePdf();
+        }
+
+        private static Action<IContainer> ComposeOrderDocument(OrdersResponseDto details)
+        {
+            return container =>
+            {
+                container.Column(col =>
+                {
+                    col.Item().PaddingTop(0).Column(hcol =>
+                    {
+                        hcol.Item().AlignCenter().Text("Министерство образования и науки Пермского края").FontSize(12);
+                        hcol.Item().AlignCenter().Text("краевое государственное автономное профессиональное образовательное учреждение").FontSize(12);
+                        hcol.Item().AlignCenter().Text("«ПЕРМСКИЙ АВИАЦИОННЫЙ ТЕХНИКУМ ИМ. А.Д. ШВЕЦОВА»").FontSize(12);
+
+                        hcol.Item().PaddingTop(8).AlignCenter().Text("УПРАВЛЕНИЕ УЧЕБНОЙ РАБОТЫ").FontSize(12);
+                        hcol.Item().PaddingTop(8).AlignCenter().Text("РАСПОРЯЖЕНИЕ").FontSize(12).Bold();
+                    });
+
+                    var date = details.DateCreate;
+                    var monthLow = date.ToString("MMMM", new CultureInfo("ru-RU"));
+
+                    col.Item().PaddingTop(10).Row(row =>
+                    {
+                        row.ConstantColumn(30).Text($"« {(date.Day < 10 ? "0" + date.Day : date.Day)} »");
+                        row.ConstantColumn(80).BorderBottom(0.5f).AlignCenter().Text(monthLow);
+                        row.RelativeColumn().Text($" 20{date.ToString("yy")} г.");
+                        row.ConstantColumn(20).AlignRight().Text("№");
+                        row.ConstantColumn(35).BorderBottom(0.1f).AlignCenter().Text(details.Number);
+                    });
+
+                    col.Item().PaddingTop(10).Text("О ликвидации академической\nзадолженности");
+
+                    string indent = "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0";
+
+                    col.Item().PaddingTop(10).Text(txt =>
+                    {
+                        txt.Justify();
+
+                        txt.Span($"{indent}На основании п. 3, 5, 6, 11 Статьи 58 Федерального Закона №273-ФЗ «Об образовании в Российской Федерации»:\n");
+                        txt.Span($"{indent}3. Обучающиеся обязаны ликвидировать академическую задолженность.\n");
+                        txt.Span($"{indent}5. Обучающиеся, имеющие академическую задолженность, вправе пройти промежуточную аттестацию по соответствующим учебному предмету, курсу, дисциплине (модулю) не более двух раз в сроки, определяемые организацией, осуществляющей образовательную деятельность. В указанный период не включаются время болезни обучающегося, нахождение его в академическом отпуске или отпуске по беременности и родам.\n");
+                        txt.Span($"{indent}6. Для проведения промежуточной аттестации во второй раз образовательной организацией создается комиссия.\n");
+                        txt.Span($"{indent}11. Обучающиеся по основным профессиональным образовательным программам, не ликвидировавшие в установленные сроки академической задолженности, отчисляются из этой организации как не выполнившие обязанностей по добросовестному освоению образовательной программы и выполнению учебного плана.\n");
+                    });
+
+                    col.Item().PaddingTop(5).Text(txt =>
+                    {
+                        txt.Justify();
+                        txt.Span($"{indent}Неявка студента без уважительной причины ").Bold();
+                        txt.Span("на заседание комиссии не дает ему право на назначение дополнительных сроков ликвидации академической задолженности и ");
+                        txt.Span("приравнивается к неудовлетворительной оценке.").Bold();
+                    });
+
+                    string studentName = ((dynamic)details.StudentId).Name ?? string.Empty;
+                    string groupName = ((dynamic)details.StudentId).Group ?? string.Empty;
+                    string disciplineName = ((dynamic)details.DisciplineId).Name ?? string.Empty;
+
+                    col.Item().PaddingTop(5).Text(txt =>
+                    {
+                        txt.Justify();
+                        txt.Span($"{indent}Для студента ");
+                        txt.Span($" {studentName}");
+                        txt.Span(", группа ");
+                        txt.Span($" {groupName}");
+                        txt.Span(", установить следующий график ликвидации академической задолженности:");
+                    });
+
+                    col.Item().PaddingTop(10).Text("Прием академической задолженности преподавателем");
+                    col.Item().Element(c => DrawTable(c,
+                        "преподаватель",
+                        disciplineName,
+                        details.DateReceptionTeacher,
+                        string.Join(", ", details.ReceptionTeachers.Select(t => FormatToInitials(t.TeacherName)))));
+
+                    col.Item().PaddingTop(10).Text("Прием академической задолженности комиссией");
+                    col.Item().Element(c => DrawTable(c,
+                        "состав комиссии",
+                        disciplineName,
+                        details.DateReceptionCommission,
+                        string.Join(", ", details.ReceptionCommissions.Select(t => FormatToInitials(t.TeacherName)))));
+
+                    col.Item().PaddingTop(10).Row(row =>
+                    {
+                        row.RelativeColumn().Text("Руководитель управления");
+                        row.ConstantColumn(150).BorderBottom(0.5f);
+                        row.RelativeColumn().AlignRight().Text("А.В. Федорова");
+                    });
+
+                    col.Item().PaddingTop(10).Text("С распоряжением ознакомлены:").Underline();
+                    col.Item().Element(c => DrawSignatureRow(c, "Зав. отделением"));
+                    col.Item().Element(c => DrawSignatureRow(c, "Председатель ЦМК"));
+                    col.Item().Element(c => DrawSignatureRow(c, "Студент"));
+                });
+            };
+        }
+        private static void DrawTable(IContainer container, string thirdColumnHeader, string discipline, DateTime? date, string teachers)
+        {
+            container.Table(table =>
+            {
+                table.ColumnsDefinition(cols =>
+                {
+                    cols.RelativeColumn(2f);
+                    cols.RelativeColumn(1f);
+                    cols.RelativeColumn(1.5f);
+                });
+
+                table.Header(h =>
+                {
+                    h.Cell().Element(OrderHeaderCellStyle).Text("дисциплина");
+                    h.Cell().Element(OrderHeaderCellStyle).Text("дата и время");
+                    h.Cell().Element(OrderHeaderCellStyle).Text(thirdColumnHeader);
+                });
+
+                table.Cell().Element(OrderBodyCellStyle).Text(discipline);
+                
+                string dateStr = date.HasValue ? date.Value.ToString("dd.MM.yyyy" + " в " + "HH:mm") : "";
+                table.Cell().Element(OrderBodyCellStyle).AlignCenter().Text(dateStr);
+
+                table.Cell().Element(OrderBodyCellStyle).Text(teachers);
+            });
+        }
+
+        private static void DrawSignatureRow(IContainer container, string roleName)
+        {
+            container.PaddingTop(5).Row(row =>
+            {
+                row.ConstantColumn(110).Text(roleName);
+                row.ConstantColumn(90).BorderBottom(0.5f);
+                row.ConstantColumn(5).AlignCenter().Text("/");
+                row.ConstantColumn(100).BorderBottom(0.5f);
+                row.ConstantColumn(5).AlignCenter().Text("/");
+                row.RelativeColumn().Text(" «____» ____________ 20___ г.");
+            });
+        }
+
+        private static IContainer OrderHeaderCellStyle(IContainer container)
+        {
+            return container.Border(0.5f).BorderColor(Colors.Black)
+                .PaddingVertical(2).PaddingHorizontal(4)
+                .AlignCenter().AlignMiddle();
+        }
+
+        private static IContainer OrderBodyCellStyle(IContainer container)
+        {
+            return container.Border(0.5f).BorderColor(Colors.Black)
+                .PaddingVertical(4).PaddingHorizontal(4)
+                .AlignMiddle().MinHeight(20);
+        }
+
+        private static string FormatToInitials(string fullName)
+        {
+            if (string.IsNullOrWhiteSpace(fullName))
+                return string.Empty;
+
+            var parts = fullName.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+            if (parts.Length >= 3)
+            {
+                return $"{parts[0]} {parts[1][0]}.{parts[2][0]}.";
+            }
+            else if (parts.Length == 2)
+            {
+                return $"{parts[0]} {parts[1][0]}.";
+            }
+            return parts[0];
         }
     }
 }

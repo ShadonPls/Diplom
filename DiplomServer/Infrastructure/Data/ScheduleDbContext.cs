@@ -22,6 +22,7 @@ namespace DiplomServer.Infrastructure.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            
             modelBuilder.Entity<SchedulePlanDiscipline>().ToTable("plans_disciplines").HasKey(x => x.Id);
             modelBuilder.Entity<ScheduleAcademicPlans>().ToTable("academic_plans").HasKey(x => x.Id);
             modelBuilder.Entity<ScheduleUser>().ToTable("users").HasKey(x => x.Id);

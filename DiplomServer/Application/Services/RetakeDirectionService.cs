@@ -147,25 +147,23 @@ namespace DiplomServer.Application.Services
 
         private async Task<RetakeDirectionDetailsDto> MapToDetailsAsync(RetakeDirection entity)
         {
-            var groupTask = _lookupService.GetGroupByIdAsync(entity.GroupDiscipline.GroupId);
-            var discTask = _lookupService.GetDisciplineByIdAsync(entity.GroupDiscipline.DisciplineId);
-            var attTask = _lookupService.GetAttestationByIdAsync(entity.GroupDiscipline.AttestTypeId);
+            var groupTask = await _lookupService.GetGroupByIdAsync(entity.GroupDiscipline.GroupId);
+            var discTask = await _lookupService.GetDisciplineByIdAsync(entity.GroupDiscipline.DisciplineId);
+            var attTask = await _lookupService.GetAttestationByIdAsync(entity.GroupDiscipline.AttestTypeId);
 
             var studentIds = entity.RetakeDirectionStudents.Select(s => s.StudentId);
-            var dictTask = _lookupService.GetStudentsDictionaryByIdAsync(studentIds);
-
-            await Task.WhenAll(groupTask, discTask, attTask, dictTask);
+            var dictTask = await _lookupService.GetStudentsDictionaryByIdAsync(studentIds);
 
             return new RetakeDirectionDetailsDto
             {
                 Direction = MapToResponse(entity),
-                Group = groupTask.Result,
-                Discipline = discTask.Result,
-                AttestationType = attTask.Result,
+                Group = groupTask,
+                Discipline = discTask,
+                AttestationType = attTask,
                 Students = entity.RetakeDirectionStudents.Select(s => new RetakeDirectionStudentResponseDto
                 {
                     StudentId = s.StudentId,
-                    StudentName = dictTask.Result[s.StudentId].Name,
+                    StudentName = dictTask[s.StudentId].Name,
                     GradeValue = s.RetakeGradeValue,
                     IsPassed = s.RetakeIsPassed,
                     GradeDate = s.RetakeGradeDate

@@ -1,4 +1,5 @@
 ﻿using DiplomServer.Application.Interfaces;
+using DiplomServer.Application.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -27,5 +28,17 @@ namespace DiplomServer.Controllers
                 "application/pdf",
                 "retake-directions.pdf");
         }
+
+        [HttpPost("order/pdf")]
+        public async Task<IActionResult> GetOrderPdf([FromBody] IList<uint> ids)
+        {
+            var fileBytes = await _pdfService.GenerateOrdersPdfAsync(ids);
+
+            return File(
+                fileBytes,
+                "application/pdf",
+                "order.pdf");
+        }
+
     }
 }

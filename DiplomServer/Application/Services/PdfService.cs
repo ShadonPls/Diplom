@@ -1,4 +1,5 @@
 ﻿using DiplomServer.Application.DTOs.Auth;
+using DiplomServer.Application.DTOs.Orders;
 using DiplomServer.Application.DTOs.RetakeDirections;
 using DiplomServer.Application.Interfaces;
 using DiplomServer.Domain.Entities;
@@ -12,18 +13,21 @@ namespace DiplomServer.Application.Services
     {
         private readonly IRetakeDirectionService _retakeDirectionService;
         private readonly ICurrentUserService _currentUserService;
+        private readonly IOrdersService _ordersService;
         private readonly PdfGenerator _pdfGenerator;
         private readonly IAuthService _authService;
         public PdfService(
             IRetakeDirectionService retakeDirectionService,
             ICurrentUserService currentUserService,
             PdfGenerator pdfGenerator,
-            IAuthService authService)
+            IAuthService authService,
+            IOrdersService ordersService)
         {
             _retakeDirectionService = retakeDirectionService;
             _currentUserService = currentUserService;
             _pdfGenerator = pdfGenerator;
             _authService = authService;
+            _ordersService = ordersService;
         }
 
 
@@ -42,6 +46,23 @@ namespace DiplomServer.Application.Services
             }
 
             return _pdfGenerator.GenerateRetakeDirectionPdf(items);
+        }
+
+        public async Task<byte[]> GenerateOrdersPdfAsync(IList<uint> orderIds)
+        {
+            if (!_currentUserService.TeacherId.HasValue)
+                throw new UnauthorizedAccessException("TeacherId отсутствует.");
+
+            var teacher = await _authService.GetCurrentUserAsync();
+
+            var items = new List<(OrdersResponseDto, CurrentUserDto)>();
+            foreach (var id in orderIds)
+            {
+                var order = await _ordersService.GetByIdAsync(id);
+                items.Add((order, teacher));
+            }
+
+            return _pdfGenerator.GenerateOrderPdf(items);
         }
     }
 }
