@@ -10,7 +10,7 @@ namespace DiplomServer.Application.Interfaces
         Task<List<TypeDto>> GetAttestTypesAsync();
         Task<List<SelectListItemDto>> GetGroupsByDisciplineIdAsync(uint disciplineId);
         Task<List<TypeDto>> GetTeachersByIdAsync(uint teacherId);
-        Task<List<TypeDto>> GetTeachersAsync();
+        Task<List<SelectListItemDto>> GetTeachersAsync();
         Task<List<SelectListItemDto>> GetStudentsDebts();
         Task<List<SelectListItemDto>> GetDisciplinesStudentsDebts(uint studentId);
         Task<List<SelectListItemDto>> GetTeacherByDisciplinesAsync(uint disciplineId);

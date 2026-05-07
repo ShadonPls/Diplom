@@ -43,7 +43,16 @@ namespace DiplomServer.Application.Services
         public async Task<List<TypeDto>> GetAttestTypesAsync() => await _lookupRepository.GetAttestTypesAsync();
         public async Task<List<TypeDto>> GetGroupsAsync() => await _lookupRepository.GetGroupsAsync();
         public async Task<List<TypeDto>> GetTeachersByIdAsync(uint teacherId) => await _lookupRepository.GetTeachersByIdAsync(teacherId);
-        public async Task<List<TypeDto>> GetTeachersAsync() => await _lookupRepository.GetTeachersAsync();
+        public async Task<List<SelectListItemDto>> GetTeachersAsync()
+        {
+            var teachers = await _lookupRepository.GetTeachersAsync();
+
+            return teachers.Select(g => new SelectListItemDto
+            {
+                Value = (uint)g.Id,
+                Text = g.Name
+            }).ToList();
+        }
         public async Task<List<SelectListItemDto>> GetSemestrByGroupAsync(uint groupId)
         {
             var groups = await _lookupRepository.GetSemestersByGroupIdAsync(groupId);
