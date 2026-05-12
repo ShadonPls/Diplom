@@ -78,6 +78,10 @@ namespace DiplomServer.Controllers
         {
             return Ok(await _lookupService.GetDisciplinesStudentsDebts(studentId));
         }
-        
+        [HttpGet("orders/{number}")]
+        public async Task<ActionResult<bool>> TestNumber(uint number)
+        {
+            return Ok(await _lookupService.TestNumber(number));
+        }
     }
 }

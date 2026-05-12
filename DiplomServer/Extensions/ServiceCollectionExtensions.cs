@@ -157,9 +157,11 @@ namespace DiplomServer.Extensions
             services.AddScoped<IPdfService, PdfService>();
             services.AddScoped<IOrdersService, OrdersService>();
             services.AddScoped<IExcelParser, ExcelParser>();
+            services.AddHostedService<NotificationWorker>();
 
             services.AddScoped<JwtTokenGenerator>();
             services.AddScoped<PdfGenerator>();
+
 
             services.AddFluentValidationAutoValidation();
             services.AddValidatorsFromAssembly(System.Reflection.Assembly.GetExecutingAssembly());

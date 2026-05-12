@@ -1,8 +1,8 @@
 ﻿namespace DiplomServer.Domain.Enums
 {
-    public static class UserRoles
+    public enum UserRole
     {
-        public const string Teacher = "Teacher";
-        public const string Admin = "Admin";
+        Teacher = 0,
+        DepartmentHead = 1
     }
 }

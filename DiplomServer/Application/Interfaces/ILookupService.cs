@@ -11,6 +11,7 @@ namespace DiplomServer.Application.Interfaces
         Task<List<SelectListItemDto>> GetGroupsByDisciplineIdAsync(uint disciplineId);
         Task<List<TypeDto>> GetTeachersByIdAsync(uint teacherId);
         Task<List<SelectListItemDto>> GetTeachersAsync();
+        Task<bool> TestNumber(uint number);
         Task<List<SelectListItemDto>> GetStudentsDebts();
         Task<List<SelectListItemDto>> GetDisciplinesStudentsDebts(uint studentId);
         Task<List<SelectListItemDto>> GetTeacherByDisciplinesAsync(uint disciplineId);

@@ -1,4 +1,6 @@
-﻿namespace DiplomServer.Application.DTOs.Auth
+﻿using DiplomServer.Domain.Enums;
+
+namespace DiplomServer.Application.DTOs.Auth
 {
     public class CurrentUserDto
     {
@@ -6,5 +8,6 @@
         public string Login { get; set; } = string.Empty;
         public uint? TeacherId { get; set; }
         public string TeacherName { get; set; } = "";
+        public UserRole Role { get; set; } = UserRole.Teacher;
     }
 }

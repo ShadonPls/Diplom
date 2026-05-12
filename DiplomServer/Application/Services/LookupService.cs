@@ -29,6 +29,11 @@ namespace DiplomServer.Application.Services
             }).ToList();
         }
 
+        public async Task<bool> TestNumber(uint number)
+        {
+            return await _lookupRepository.TestNumber(number);
+        }
+
         public async Task<List<SelectListItemDto>> GetTeacherByDisciplinesAsync(uint disciplineId)
         {
             var teacher = await _lookupRepository.GetTeachersByDisciplineAsync(disciplineId);

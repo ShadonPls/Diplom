@@ -47,12 +47,20 @@ namespace DiplomServer.Application.Services
                 throw new UnauthorizedAccessException("Пользователь не найден.");
             var teacher = await _authRepository.GetTeacherByIdAsync(user.IdUser);
             var teacherName = teacher?.Name ?? "Преподаватель не найден";
+
+            var role = UserRole.Teacher;
+            if (teacher != null && DepartmentHeads.HeadNames.Contains(teacher.Name))
+            {
+                role = UserRole.DepartmentHead;
+            }
+
             return new CurrentUserDto
             {
                 Id = (uint)user.Id,
                 Login = user.Login,
                 TeacherId = user.IdUser,
                 TeacherName = teacherName,
+                Role = role
             };
         }
 
@@ -60,17 +68,27 @@ namespace DiplomServer.Application.Services
         {
             var teacher = await _authRepository.GetTeacherByIdAsync(user.IdUser);
             var teacherName = teacher?.Name ?? "Преподаватель не найден";
+
+            // Проверяем, является ли преподаватель заведующим отделением
+            var role = UserRole.Teacher;
+            if (teacher != null && DepartmentHeads.HeadNames.Contains(teacher.Name))
+            {
+                role = UserRole.DepartmentHead;
+            }
+
             return new AuthResponseDto
             {
-                Token = _jwtTokenGenerator.Generate(user),
+                Token = _jwtTokenGenerator.Generate(user, role),
                 User = new CurrentUserDto
                 {
                     Id = (uint)user.Id,
                     Login = user.Login,
                     TeacherId = user.IdUser,
                     TeacherName = teacherName,
+                    Role = role
                 }
             };
+        
         }
     }
 }

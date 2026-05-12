@@ -10,6 +10,7 @@ namespace DiplomServer.Infrastructure.Repositories.Interfaces
         Task<List<TypeDto>> GetTeacherDisciplinesAsync(uint teacherId);
         Task<List<TypeDto>> GetGroupsAsync();
         Task<List<TypeDto>> GetTeachersAsync();
+        Task<bool> TestNumber(uint number);
         Task<List<TypeDto>> GetTeachersByIdAsync(uint teacherId);
         Task<Dictionary<uint, ScheduleTeacher>> GetTeachersByIdsAsync(IEnumerable<uint> teachersId);
         Task<List<TypeDto>> GetStudentsWithDebtsAsync();

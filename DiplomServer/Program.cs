@@ -8,7 +8,7 @@ builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddAppServices();
 builder.Services.AddAppRepositories();
 builder.Services.AddAppSwagger(builder.Configuration);
-
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddControllers();
 
 builder.Services.AddCors(options =>

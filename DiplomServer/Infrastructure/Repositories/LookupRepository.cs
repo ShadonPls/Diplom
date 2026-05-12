@@ -28,6 +28,7 @@ namespace DiplomServer.Infrastructure.Repositories
             return await _scheduleContext.Groups
             .Join(_scheduleContext.AcademicPlans, g => g.id_academic_plans, ap => ap.Id, (g, ap) => new { g, ap })
             .OrderBy(x => x.ap.Name).ThenBy(x => x.g.Number)
+            .Where(x=>x.ap.Delete != 1 && x.g.Delete != 1)
             .Select(x => new TypeDto { Id = (int)x.g.Id, Name = $"{x.ap.Name}-{x.g.Number}" })
             .ToListAsync();
         }
@@ -73,7 +74,9 @@ namespace DiplomServer.Infrastructure.Repositories
                     x => x.pd.Id,
                     td => td.id_plan_discipline,
                     (x, td) => new { x.d, td })
-                .Where(x => x.td.id_teacher == (int)teacherId)
+                .Where(x => x.td.id_teacher == (int)teacherId &&
+                            x.td.Delete != 1 &&
+                           x.d.Delete != 1)
                 .Select(x => x.d)
                 .Distinct()
                 .OrderBy(d => d.Name)
@@ -99,7 +102,9 @@ namespace DiplomServer.Infrastructure.Repositories
                     x => x.td.id_plan_discipline,
                     pd => pd.Id,
                     (x, pd) => new { x.t, pd })
-                .Where(x => x.pd.id_discipline == (int)disciplineId)
+                .Where(x => x.pd.id_discipline == (int)disciplineId &&
+                           x.pd.Delete != 1 &&
+                           x.t.Delete != 1)
                 .Select(x => x.t)
                 .Distinct()
                 .OrderBy(t => t.last_name)
@@ -137,7 +142,7 @@ namespace DiplomServer.Infrastructure.Repositories
                 return new Dictionary<uint, ScheduleTeacher>();
 
             var students = await _scheduleContext.Teachers
-                .Where(s => teachersId.Contains((uint)s.Id))
+                .Where(s => teachersId.Contains((uint)s.Id) && s.Delete != 1)
                 .Select(s => new ScheduleTeacher
                 {
                     Id = (uint)s.Id,
@@ -150,10 +155,18 @@ namespace DiplomServer.Infrastructure.Repositories
             return students.ToDictionary(s => s.Id, s => s);
         }
 
+        public async Task<bool> TestNumber(uint number)
+        {
+            bool exists = await _appDbContext.Orders
+                .AnyAsync(o => o.Number == $"{number}");
+
+            return !exists;
+        }
+
         public async Task<StudentTypeDto> GetStudentById(uint studentIds)
         {
             var students = await _vrContext.Students
-                .Where(s => s.Id == studentIds)
+                .Where(s => s.Id == studentIds )
                 .Select(s => new StudentTypeDto
                 {
                     Id = (int)s.Id,
@@ -204,15 +217,26 @@ namespace DiplomServer.Infrastructure.Repositories
 
         public async Task<TypeDto> GetGroupByIdAsync(uint groupId)
         {
-            return await _scheduleContext.Groups
-                .Join(_scheduleContext.AcademicPlans, g => g.id_academic_plans, ap => ap.Id, (g, ap) => new TypeDto { Id = (int)g.Id, Name = $"{ap.Name}-{g.Number}" })
-                .FirstOrDefaultAsync(x => x.Id == (int)groupId);
+            var result = await _scheduleContext.Groups
+                .Join(_scheduleContext.AcademicPlans,
+                    g => g.id_academic_plans,
+                    ap => ap.Id,
+                    (g, ap) => new { g, ap })
+                .Where(x => x.g.Id == (int)groupId && x.g.Delete != 1 && x.ap.Delete != 1)
+                .Select(x => new TypeDto
+                {
+                    Id = (int)x.g.Id,
+                    Name = $"{x.ap.Name}-{x.g.Number}"
+                })
+                .FirstOrDefaultAsync();
+
+            return result;
         }
 
         public async Task<TypeDto> GetDisciplineByIdAsync(uint disciplineId)
         {
             var discipline = await _scheduleContext.Disciplines
-                .Where(d => d.Id == (int)disciplineId)
+                .Where(d => d.Id == (int)disciplineId && d.Delete != 1)
                 .FirstOrDefaultAsync();
 
             if (discipline is null)
@@ -241,6 +265,7 @@ namespace DiplomServer.Infrastructure.Repositories
                 )
                 .Where(x => x.pd.id_discipline == (int)disciplineId &&
                             x.pd.Delete == 0 &&
+                            x.ap.Delete == 0 &&
                             x.g.Delete == 0)
                 .Select(x => new
                 {
@@ -266,7 +291,7 @@ namespace DiplomServer.Infrastructure.Repositories
                     g => (int)g.id_academic_plans,
                     ap => (int?)ap.Id,
                     (g, ap) => new { g, ap })
-                .Where(x => x.g.Id == (int)groupId && x.g.Delete == 0)
+                .Where(x => x.g.Id == (int)groupId && x.g.Delete != 1 && x.ap.Delete != 1)
                 .Select(x => new
                 {
                     YearGroup = x.g.Year,
@@ -370,7 +395,7 @@ namespace DiplomServer.Infrastructure.Repositories
                 return new List<TypeDto>();
 
             return await _scheduleContext.Disciplines
-                .Where(d => disciplineIds.Contains((uint)d.Id))
+                .Where(d => disciplineIds.Contains((uint)d.Id) && d.Delete != 1)
                 .Select(d => new TypeDto
                 {
                     Id = (int)d.Id,
